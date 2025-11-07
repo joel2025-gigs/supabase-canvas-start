@@ -1,16 +1,47 @@
+import { useState } from "react";
+import { Phone, Mail, MapPin, Globe, MessageCircle } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, Phone, Mail, Globe, MessageCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { contactSchema } from "@/lib/validation";
 
 const Contact = () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+
+    // Validate inputs
+    const validation = contactSchema.safeParse({
+      name,
+      email,
+      phone,
+      message
+    });
+
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
+      setLoading(false);
+      return;
+    }
+
+    // TODO: Implement backend to save contact messages
     toast.success("Message sent! We'll get back to you soon.");
+    setName("");
+    setEmail("");
+    setPhone("");
+    setMessage("");
+    setLoading(false);
   };
 
   const contactInfo = [
@@ -64,21 +95,46 @@ const Contact = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-foreground mb-1 block">Full Name</label>
-                    <Input placeholder="John Doe" required />
+                    <Input 
+                      placeholder="John Doe" 
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required 
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-foreground mb-1 block">Email</label>
-                    <Input type="email" placeholder="john@example.com" required />
+                    <Input 
+                      type="email" 
+                      placeholder="john@example.com" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required 
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-foreground mb-1 block">Phone</label>
-                    <Input type="tel" placeholder="+256 XXX XXXXXX" required />
+                    <Input 
+                      type="tel" 
+                      placeholder="+256 XXX XXXXXX" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required 
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-foreground mb-1 block">Message</label>
-                    <Textarea placeholder="How can we help you?" rows={6} required />
+                    <Textarea 
+                      placeholder="How can we help you?" 
+                      rows={6} 
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      required 
+                    />
                   </div>
-                  <Button type="submit" className="w-full gradient-accent">Send Message</Button>
+                  <Button type="submit" className="w-full gradient-accent" disabled={loading}>
+                    {loading ? "Sending..." : "Send Message"}
+                  </Button>
                 </form>
               </CardContent>
             </Card>

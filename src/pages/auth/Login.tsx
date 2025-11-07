@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import logo from "@/assets/nawap-logo.png";
+import { loginSchema } from "@/lib/validation";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -17,9 +18,22 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    // Validate inputs
+    const validation = loginSchema.safeParse({
       email,
-      password,
+      password
+    });
+
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: validation.data.email,
+      password: validation.data.password,
     });
 
     if (error) {
