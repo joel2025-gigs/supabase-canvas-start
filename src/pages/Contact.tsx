@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { contactSchema } from "@/lib/validation";
+import { supabase } from "@/integrations/supabase/client";
 
 const Contact = () => {
   const [name, setName] = useState("");
@@ -16,32 +17,54 @@ const Contact = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // Validate inputs
-    const validation = contactSchema.safeParse({
-      name,
-      email,
-      phone,
-      message
-    });
+    try {
+      // Validate inputs
+      const validation = contactSchema.safeParse({
+        name,
+        email,
+        phone,
+        message
+      });
 
-    if (!validation.success) {
-      const firstError = validation.error.errors[0];
-      toast.error(firstError.message);
+      if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        toast.error(firstError.message);
+        setLoading(false);
+        return;
+      }
+
+      // Save message to database
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert({
+          name: validation.data.name,
+          email: validation.data.email,
+          phone: validation.data.phone,
+          message: validation.data.message,
+        });
+
+      if (error) {
+        console.error('Error saving contact message:', error);
+        toast.error("Failed to send message. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      toast.success("Message sent! We'll get back to you soon.");
+      setName("");
+      setEmail("");
+      setPhone("");
+      setMessage("");
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast.error("Failed to send message. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // TODO: Implement backend to save contact messages
-    toast.success("Message sent! We'll get back to you soon.");
-    setName("");
-    setEmail("");
-    setPhone("");
-    setMessage("");
-    setLoading(false);
   };
 
   const contactInfo = [
