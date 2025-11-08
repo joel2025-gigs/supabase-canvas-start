@@ -4,6 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, Users, Target, DollarSign } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import motorcycle1 from "@/assets/motorcycle-1.png";
+import motorcycle2 from "@/assets/motorcycle-2.png";
+import motorcycle3 from "@/assets/motorcycle-3.png";
+import motorcycle4 from "@/assets/motorcycle-4.png";
+import motorcycle5 from "@/assets/motorcycle-5.png";
+import motorcycle6 from "@/assets/motorcycle-6.png";
+import heroBackground from "@/assets/motorcycle-2.png";
 
 const Index = () => {
   const services = [
@@ -20,12 +27,12 @@ const Index = () => {
   ];
 
   const products = [
-    { price: "9,000,000", image: "https://placehold.co/400x300/1B2B5C/FFFFFF?text=Motorcycle+1" },
-    { price: "20,000,000", image: "https://placehold.co/400x300/1B2B5C/FFFFFF?text=Motorcycle+2" },
-    { price: "6,000,000", image: "https://placehold.co/400x300/1B2B5C/FFFFFF?text=Motorcycle+3" },
-    { price: "13,000,000", image: "https://placehold.co/400x300/1B2B5C/FFFFFF?text=Motorcycle+4" },
-    { price: "8,000,000", image: "https://placehold.co/400x300/1B2B5C/FFFFFF?text=Motorcycle+5" },
-    { price: "12,500,000", image: "https://placehold.co/400x300/1B2B5C/FFFFFF?text=Motorcycle+6" },
+    { price: "9,000,000", image: motorcycle1 },
+    { price: "20,000,000", image: motorcycle3 },
+    { price: "6,000,000", image: motorcycle5 },
+    { price: "13,000,000", image: motorcycle4 },
+    { price: "8,000,000", image: motorcycle2 },
+    { price: "12,500,000", image: motorcycle6 },
   ];
 
   const testimonials = [
@@ -61,20 +68,28 @@ const Index = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="gradient-hero py-20 lg:py-32">
-        <div className="section-container">
+      <section 
+        className="relative py-20 lg:py-32 overflow-hidden"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.5)), url(${heroBackground})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        <div className="section-container relative z-10">
           <div className="max-w-4xl mx-auto text-center space-y-6 animate-fade-in">
-            <h1 className="text-4xl lg:text-6xl font-bold text-primary">
+            <h1 className="text-4xl lg:text-6xl font-bold text-white drop-shadow-lg">
               Nawap General Trading
             </h1>
-            <p className="text-2xl lg:text-3xl font-medium text-foreground italic">
+            <p className="text-2xl lg:text-3xl font-medium text-white italic drop-shadow-md">
               Bridging the Gap
             </p>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-white max-w-2xl mx-auto drop-shadow-md">
               Nawap General Trading Ltd is a Ugandan-based company committed to bridging the financial gap between potential and opportunity. We focus on investing, financing, and educating communities to utilize available resources for sustainable wealth creation.
             </p>
             <Link to="/products">
-              <Button size="lg" className="gradient-accent text-lg px-8">
+              <Button size="lg" className="gradient-accent text-lg px-8 shadow-lg hover:shadow-xl transition-shadow">
                 Let's Go!
               </Button>
             </Link>
