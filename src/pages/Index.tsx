@@ -27,12 +27,13 @@ const Index = () => {
   ];
 
   const products = [
-    { price: "9,000,000", image: motorcycle1 },
-    { price: "20,000,000", image: motorcycle3 },
-    { price: "6,000,000", image: motorcycle5 },
-    { price: "13,000,000", image: motorcycle4 },
-    { price: "8,000,000", image: motorcycle2 },
-    { price: "12,500,000", image: motorcycle6 },
+    { name: "Bajaj Boxer", price: "9,000,000", image: motorcycle1 },
+    { name: "Bajaj CT", price: "20,000,000", image: motorcycle3 },
+    { name: "Haojue Xpress", price: "6,000,000", image: motorcycle5 },
+    { name: "ZongZhen", price: "13,000,000", image: motorcycle4 },
+    { name: "Evakuga", price: "8,000,000", image: motorcycle2 },
+    { name: "Haojue Xpress Plus", price: "12,500,000", image: motorcycle6 },
+    { name: "Haojue TR300", price: "15,000,000", image: motorcycle1 },
   ];
 
   const testimonials = [
@@ -133,8 +134,9 @@ const Index = () => {
             {products.map((product, index) => (
               <Card key={index} className="shadow-card hover:shadow-elegant transition-shadow">
                 <CardContent className="p-0">
-                  <img src={product.image} alt={`Motorcycle ${index + 1}`} className="w-full h-48 object-cover rounded-t-lg" />
+                  <img src={product.image} alt={product.name} className="w-full h-48 object-cover rounded-t-lg" />
                   <div className="p-4">
+                    <h3 className="text-lg font-semibold text-primary mb-2">{product.name}</h3>
                     <p className="text-2xl font-bold text-primary">UGX {product.price}</p>
                   </div>
                 </CardContent>

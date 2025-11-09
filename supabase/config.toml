@@ -1,1 +1,4 @@
 project_id = "jtdfydwhjsbwbgczfsoz"
+
+[functions.aggregate-motorcycle-news]
+verify_jwt = false
