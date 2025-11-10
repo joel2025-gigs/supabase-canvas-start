@@ -10,6 +10,14 @@ interface RSSItem {
   link: string;
   description: string;
   pubDate: string;
+  imageUrl?: string;
+}
+
+// Function to extract image from HTML description
+function extractImageUrl(description: string): string | undefined {
+  const imgRegex = /<img[^>]+src="([^">]+)"/;
+  const match = description.match(imgRegex);
+  return match ? match[1] : undefined;
 }
 
 // Function to parse RSS feed
@@ -31,11 +39,15 @@ async function parseRSSFeed(url: string): Promise<RSSItem[]> {
       const dateMatch = itemXml.match(/<pubDate>(.*?)<\/pubDate>/);
       
       if (titleMatch && linkMatch) {
+        const description = descMatch?.[1] || descMatch?.[2] || '';
+        const imageUrl = extractImageUrl(description);
+        
         items.push({
           title: titleMatch[1] || titleMatch[2] || '',
           link: linkMatch[1] || '',
-          description: descMatch?.[1] || descMatch?.[2] || '',
+          description: description,
           pubDate: dateMatch?.[1] || new Date().toISOString(),
+          imageUrl: imageUrl,
         });
       }
     }
@@ -72,14 +84,15 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Starting motorcycle news aggregation...');
+    console.log('Starting boda boda financing news aggregation...');
 
-    // RSS feeds for motorcycle news in Uganda
+    // RSS feeds focused on boda boda financing in Uganda
     const feeds = [
-      'https://news.google.com/rss/search?q=motorcycle+Uganda&hl=en-UG&gl=UG&ceid=UG:en',
-      'https://news.google.com/rss/search?q=boda+boda+Uganda&hl=en-UG&gl=UG&ceid=UG:en',
-      'https://news.google.com/rss/search?q=motorcycle+financing+Uganda&hl=en-UG&gl=UG&ceid=UG:en',
-      'https://news.google.com/rss/search?q=tricycle+Uganda&hl=en-UG&gl=UG&ceid=UG:en',
+      'https://news.google.com/rss/search?q=boda+boda+financing+Uganda&hl=en-UG&gl=UG&ceid=UG:en',
+      'https://news.google.com/rss/search?q=boda+boda+loan+Uganda&hl=en-UG&gl=UG&ceid=UG:en',
+      'https://news.google.com/rss/search?q=motorcycle+finance+Uganda&hl=en-UG&gl=UG&ceid=UG:en',
+      'https://news.google.com/rss/search?q=boda+boda+credit+Uganda&hl=en-UG&gl=UG&ceid=UG:en',
+      'https://news.google.com/rss/search?q=boda+boda+investment+Uganda&hl=en-UG&gl=UG&ceid=UG:en',
     ];
 
     let totalAdded = 0;
@@ -129,7 +142,7 @@ ${stripHtml(item.description)}
 *This article was automatically aggregated from external news sources.*
       `.trim();
 
-      // Insert new blog post
+      // Insert new blog post with image
       const { error: insertError } = await supabase
         .from('blog_posts')
         .insert({
@@ -139,7 +152,7 @@ ${stripHtml(item.description)}
           content: content,
           published: true,
           published_at: new Date(item.pubDate).toISOString(),
-          featured_image: null, // No image from RSS
+          featured_image: item.imageUrl || null,
         });
 
       if (insertError) {

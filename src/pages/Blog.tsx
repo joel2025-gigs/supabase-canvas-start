@@ -30,10 +30,10 @@ const Blog = () => {
       <section className="py-12 lg:py-20 bg-gradient-hero">
         <div className="section-container">
           <h1 className="text-4xl lg:text-5xl font-bold text-center text-primary mb-4">
-            Blog & News
+            Boda Boda Financing News
           </h1>
           <p className="text-center text-muted-foreground max-w-2xl mx-auto">
-            Stay updated with the latest news, tips, and stories from NAWAP General Trading.
+            Stay updated with the latest news on boda boda financing, loans, and investment opportunities in Uganda.
           </p>
         </div>
       </section>
