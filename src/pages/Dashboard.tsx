@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CreditApplicationForm } from "@/components/credit/CreditApplicationForm";
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
@@ -19,6 +20,7 @@ const Dashboard = () => {
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [loanTerm, setLoanTerm] = useState<number>(12);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [showApplicationForm, setShowApplicationForm] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -165,7 +167,12 @@ const Dashboard = () => {
                     </div>
                   )}
 
-                  <Button className="w-full" size="lg" disabled={!selectedProduct}>
+                  <Button 
+                    className="w-full" 
+                    size="lg" 
+                    disabled={!selectedProduct}
+                    onClick={() => setShowApplicationForm(true)}
+                  >
                     Apply for Loan
                   </Button>
                 </CardContent>
@@ -239,6 +246,17 @@ const Dashboard = () => {
         </div>
       </main>
       <Footer />
+
+      {selectedProduct && user && (
+        <CreditApplicationForm
+          open={showApplicationForm}
+          onOpenChange={setShowApplicationForm}
+          productId={selectedProduct}
+          loanTerm={loanTerm}
+          userId={user.id}
+          productName={selectedProductData?.name || ""}
+        />
+      )}
     </div>
   );
 };
