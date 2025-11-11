@@ -69,9 +69,25 @@ function createSlug(title: string): string {
     .trim();
 }
 
-// Function to strip HTML tags
+// Function to strip HTML tags and escape entities
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+  // First strip all HTML tags
+  let text = html.replace(/<[^>]*>/g, '');
+  
+  // Replace common HTML entities
+  text = text.replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'");
+  
+  // Remove any remaining HTML entity patterns
+  text = text.replace(/&[a-z]+;/gi, '');
+  text = text.replace(/&#\d+;/g, '');
+  
+  return text.trim();
 }
 
 Deno.serve(async (req) => {

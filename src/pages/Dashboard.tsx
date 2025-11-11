@@ -46,14 +46,20 @@ const Dashboard = () => {
 
     const checkAdmin = async () => {
       if (user) {
-        const { data } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id)
-          .eq("role", "admin")
-          .maybeSingle();
-        
-        setIsAdmin(!!data);
+        try {
+          const { data, error } = await supabase.functions.invoke('check-user-role', {
+            headers: {
+              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            },
+          });
+          
+          if (!error && data) {
+            setIsAdmin(data.isAdmin || false);
+          }
+        } catch (error) {
+          console.error('Error checking admin status:', error);
+          setIsAdmin(false);
+        }
       }
     };
 
