@@ -284,6 +284,51 @@ export type Database = {
           },
         ]
       }
+      jobs: {
+        Row: {
+          created_at: string | null
+          description: string
+          employment_type: string | null
+          expires_at: string | null
+          id: string
+          location: string | null
+          published: boolean | null
+          requirements: string | null
+          salary_range: string | null
+          slug: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          employment_type?: string | null
+          expires_at?: string | null
+          id?: string
+          location?: string | null
+          published?: boolean | null
+          requirements?: string | null
+          salary_range?: string | null
+          slug: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          employment_type?: string | null
+          expires_at?: string | null
+          id?: string
+          location?: string | null
+          published?: boolean | null
+          requirements?: string | null
+          salary_range?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           cash_price: number

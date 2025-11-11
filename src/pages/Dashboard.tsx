@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Mail, Bike, TrendingUp, Handshake, Building2, Users } from "lucide-react";
+import { Bike, TrendingUp, Handshake, Building2, Users } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import JobManagement from "@/components/admin/JobManagement";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreditApplicationForm } from "@/components/credit/CreditApplicationForm";
 
 const Dashboard = () => {
@@ -21,6 +22,7 @@ const Dashboard = () => {
   const [loanTerm, setLoanTerm] = useState<number>(12);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -42,8 +44,22 @@ const Dashboard = () => {
       setLoadingProducts(false);
     };
 
+    const checkAdmin = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .eq("role", "admin")
+          .maybeSingle();
+        
+        setIsAdmin(!!data);
+      }
+    };
+
     if (user) {
       fetchProducts();
+      checkAdmin();
     }
   }, [user]);
 
@@ -84,9 +100,10 @@ const Dashboard = () => {
           <h1 className="text-4xl font-bold mb-8">Welcome, {user.email}</h1>
           
           <Tabs defaultValue="loan" className="space-y-8">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsList className={`grid w-full max-w-2xl ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
               <TabsTrigger value="loan">Get Motorcycle Loan</TabsTrigger>
               <TabsTrigger value="investor">Become an Investor</TabsTrigger>
+              {isAdmin && <TabsTrigger value="admin">Manage Jobs</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="loan" className="space-y-6">
@@ -242,6 +259,12 @@ const Dashboard = () => {
                 </Card>
               </div>
             </TabsContent>
+
+            {isAdmin && (
+              <TabsContent value="admin">
+                <JobManagement />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </main>
