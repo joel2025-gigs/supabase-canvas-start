@@ -1,7 +1,8 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import ChatWidget from "@/components/messaging/ChatWidget";
 import { Card, CardContent } from "@/components/ui/card";
-import { Target, Users, Award, TrendingUp } from "lucide-react";
+import { Target, Users, Award, TrendingUp, User } from "lucide-react";
 
 const About = () => {
   const values = [
@@ -24,6 +25,25 @@ const About = () => {
       icon: TrendingUp,
       title: "Financial Growth",
       description: "We've helped hundreds of Ugandans start income-generating activities and achieve financial stability through our programs.",
+    },
+  ];
+
+  const teamMembers = [
+    {
+      name: "Brahim Nangoli",
+      title: "CEO",
+    },
+    {
+      name: "Julius Wamoyo",
+      title: "Co-Founder",
+    },
+    {
+      name: "Allen",
+      title: "General Manager",
+    },
+    {
+      name: "Kim",
+      title: "Marketing Manager",
     },
   ];
 
@@ -93,6 +113,34 @@ const About = () => {
         </div>
       </section>
 
+      <section className="py-12 lg:py-16">
+        <div className="section-container">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold text-primary mb-4">Our Leadership Team</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Meet the passionate individuals driving NAWAP's mission forward
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {teamMembers.map((member, index) => (
+              <Card key={index} className="shadow-card hover:shadow-lg transition-shadow">
+                <CardContent className="p-6 text-center space-y-4">
+                  <div className="w-24 h-24 mx-auto bg-gradient-accent rounded-full flex items-center justify-center">
+                    <User className="w-12 h-12 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-primary">{member.name}</h3>
+                    <p className="text-muted-foreground">{member.title}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <ChatWidget />
       <Footer />
     </div>
   );
