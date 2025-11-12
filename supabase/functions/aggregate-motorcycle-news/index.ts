@@ -96,11 +96,31 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Authenticate the request using a secret header
+    const authHeader = req.headers.get('x-blog-aggregator-secret');
+    const expectedSecret = Deno.env.get('BLOG_AGGREGATOR_SECRET');
+    
+    if (!expectedSecret) {
+      console.error('BLOG_AGGREGATOR_SECRET not configured');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (authHeader !== expectedSecret) {
+      console.warn('Unauthorized access attempt to blog aggregator');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Starting boda boda financing news aggregation...');
+    console.log('Starting boda boda financing news aggregation at:', new Date().toISOString());
 
     // RSS feeds focused on boda boda financing in Uganda
     const feeds = [
@@ -179,12 +199,15 @@ ${stripHtml(item.description)}
       }
     }
 
+    console.log('Blog aggregation completed at:', new Date().toISOString());
+    
     return new Response(
       JSON.stringify({
         success: true,
         message: `Successfully processed ${uniqueItems.length} articles, added ${totalAdded} new posts`,
         totalProcessed: uniqueItems.length,
         totalAdded: totalAdded,
+        timestamp: new Date().toISOString(),
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -197,6 +220,7 @@ ${stripHtml(item.description)}
       JSON.stringify({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred',
+        timestamp: new Date().toISOString(),
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
