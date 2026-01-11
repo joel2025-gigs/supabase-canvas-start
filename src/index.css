@@ -6,19 +6,19 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 20%;
+    --background: 220 20% 97%;
+    --foreground: 220 20% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 20%;
+    --card-foreground: 220 20% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 20%;
+    --popover-foreground: 220 20% 10%;
 
-    --primary: 222 56% 23%;
-    --primary-foreground: 0 0% 100%;
-    --primary-light: 222 56% 35%;
-    --primary-lighter: 222 56% 85%;
+    --primary: 174 72% 46%;
+    --primary-foreground: 220 25% 8%;
+    --primary-light: 174 72% 55%;
+    --primary-lighter: 174 72% 85%;
 
     --accent: 356 82% 51%;
     --accent-foreground: 0 0% 100%;
@@ -26,7 +26,7 @@
     --accent-lighter: 356 82% 95%;
 
     --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 20%;
+    --secondary-foreground: 220 20% 10%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
@@ -36,63 +36,75 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222 56% 23%;
+    --ring: 174 72% 46%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
+    --sidebar-primary: 174 72% 46%;
+    --sidebar-primary-foreground: 220 25% 8%;
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 174 72% 46%;
 
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Custom accent colors for dashboard */
+    --cyan: 174 72% 46%;
+    --cyan-glow: 174 72% 56%;
+    --success: 142 76% 45%;
+    --warning: 45 93% 58%;
+    --info: 217 91% 60%;
   }
 
   .dark {
-    --background: 222 47% 11%;
+    --background: 222 35% 7%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 15%;
+    --card: 222 35% 10%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 47% 15%;
+    --popover: 222 35% 10%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 222 56% 35%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 174 72% 46%;
+    --primary-foreground: 220 25% 8%;
+    --primary-light: 174 72% 55%;
+    --primary-lighter: 174 72% 30%;
 
     --accent: 356 82% 55%;
     --accent-foreground: 0 0% 100%;
+    --accent-light: 356 82% 65%;
+    --accent-lighter: 356 82% 25%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 222 35% 15%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 222 35% 15%;
+    --muted-foreground: 215 20.2% 55.1%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 222 56% 35%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 222 25% 18%;
+    --input: 222 25% 18%;
+    --ring: 174 72% 46%;
+
+    --sidebar-background: 222 35% 8%;
+    --sidebar-foreground: 210 40% 90%;
+    --sidebar-primary: 174 72% 46%;
+    --sidebar-primary-foreground: 220 25% 8%;
+    --sidebar-accent: 222 35% 15%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 25% 15%;
+    --sidebar-ring: 174 72% 46%;
+
+    /* Custom accent colors for dashboard */
+    --cyan: 174 72% 46%;
+    --cyan-glow: 174 72% 56%;
+    --success: 142 76% 45%;
+    --warning: 45 93% 58%;
+    --info: 217 91% 60%;
   }
 }
 
@@ -103,6 +115,10 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
+  }
+  /* Force dark mode for entire app */
+  html {
+    @apply dark;
   }
 }
 
@@ -117,12 +133,37 @@
     background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-light)));
   }
   .gradient-hero {
-    background: linear-gradient(135deg, hsl(206 100% 50% / 0.15), hsl(206 100% 70% / 0.1));
+    background: linear-gradient(135deg, hsl(174 72% 46% / 0.15), hsl(174 72% 70% / 0.1));
   }
   .shadow-elegant {
-    box-shadow: 0 10px 30px -10px hsl(var(--primary) / 0.15);
+    box-shadow: 0 10px 30px -10px hsl(var(--primary) / 0.25);
   }
   .shadow-card {
-    box-shadow: 0 2px 8px -2px hsl(var(--foreground) / 0.08);
+    box-shadow: 0 4px 20px -4px hsl(0 0% 0% / 0.25);
+  }
+  .shadow-glow {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-sm border border-border/50;
+  }
+  .gradient-bg {
+    background: 
+      radial-gradient(ellipse at top right, hsl(217 91% 60% / 0.15), transparent 50%),
+      radial-gradient(ellipse at bottom left, hsl(174 72% 46% / 0.1), transparent 50%),
+      hsl(var(--background));
+  }
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent;
+  }
+  .btn-glow {
+    @apply relative overflow-hidden;
+  }
+  .btn-glow::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-primary/20 to-primary-light/20 opacity-0 transition-opacity;
+  }
+  .btn-glow:hover::before {
+    @apply opacity-100;
   }
 }

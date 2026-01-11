@@ -131,11 +131,11 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen gradient-bg">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -143,19 +143,18 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transform transition-transform duration-200 ease-in-out lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-200 ease-in-out lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-16 items-center justify-between px-4 border-b">
+        <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <img src={nawapLogo} alt={APP_NAME} className="h-8 w-8" />
-            <span className="font-bold text-lg text-primary">{APP_NAME}</span>
+            <img src={nawapLogo} alt={APP_NAME} className="h-10 w-10" />
           </Link>
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-5 w-5" />
@@ -163,20 +162,24 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4">
-          <ul className="space-y-1 px-2">
+          <ul className="space-y-1 px-3">
             {filteredNavItems.map((item) => (
               <li key={item.href}>
                 <Link
                   to={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                     location.pathname === item.href
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-primary/10 text-primary border border-primary/30 shadow-glow"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                   )}
                   onClick={() => setSidebarOpen(false)}
                 >
-                  {item.icon}
+                  <span className={cn(
+                    location.pathname === item.href ? "text-primary" : ""
+                  )}>
+                    {item.icon}
+                  </span>
                   {item.label}
                 </Link>
               </li>
@@ -185,15 +188,15 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </nav>
 
         {/* Sync status */}
-        <div className="border-t p-4">
+        <div className="border-t border-sidebar-border p-4">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               {isOnline ? (
-                <Wifi className="h-4 w-4 text-green-500" />
+                <Wifi className="h-4 w-4 text-success" />
               ) : (
-                <WifiOff className="h-4 w-4 text-red-500" />
+                <WifiOff className="h-4 w-4 text-destructive" />
               )}
-              <span className={isOnline ? "text-green-600" : "text-red-600"}>
+              <span className={isOnline ? "text-success" : "text-destructive"}>
                 {isOnline ? "Online" : "Offline"}
               </span>
             </div>
@@ -203,7 +206,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 size="sm"
                 onClick={syncPendingChanges}
                 disabled={!isOnline || isSyncing}
-                className="h-7 text-xs"
+                className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/10"
               >
                 <RefreshCw className={cn("h-3 w-3 mr-1", isSyncing && "animate-spin")} />
                 {pendingCount} pending
@@ -216,11 +219,11 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-card px-4 lg:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-md px-4 lg:px-6">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="lg:hidden hover:bg-muted"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-5 w-5" />
@@ -231,7 +234,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="flex items-center gap-4">
             {/* Offline indicator for mobile */}
             {!isOnline && (
-              <Badge variant="destructive" className="hidden sm:flex">
+              <Badge variant="destructive" className="hidden sm:flex bg-destructive/20 text-destructive border-destructive/30">
                 <WifiOff className="h-3 w-3 mr-1" />
                 Offline
               </Badge>
@@ -240,38 +243,38 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {/* User menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
+                <Button variant="ghost" className="flex items-center gap-2 hover:bg-muted rounded-xl px-3">
+                  <Avatar className="h-8 w-8 border-2 border-primary/30">
                     <AvatarImage src={profile?.avatar_url || ""} />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-primary/20 text-primary font-semibold">
                       {profile?.full_name ? getInitials(profile.full_name) : "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden sm:inline text-sm font-medium">
+                  <span className="hidden sm:inline text-sm font-medium text-foreground">
                     {profile?.full_name || "User"}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 bg-popover border-border">
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
-                    <span>{profile?.full_name}</span>
-                    <span className="text-xs text-muted-foreground capitalize">
+                    <span className="text-foreground">{profile?.full_name}</span>
+                    <span className="text-xs text-primary capitalize">
                       {roles[0]?.replace("_", " ") || "User"}
                     </span>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/settings")}>
-                  <User className="h-4 w-4 mr-2" />
+                <DropdownMenuSeparator className="bg-border" />
+                <DropdownMenuItem onClick={() => navigate("/settings")} className="focus:bg-muted">
+                  <User className="h-4 w-4 mr-2 text-primary" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/settings")}>
-                  <Settings className="h-4 w-4 mr-2" />
+                <DropdownMenuItem onClick={() => navigate("/settings")} className="focus:bg-muted">
+                  <Settings className="h-4 w-4 mr-2 text-primary" />
                   Settings
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} className="text-red-600">
+                <DropdownMenuSeparator className="bg-border" />
+                <DropdownMenuItem onClick={signOut} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign out
                 </DropdownMenuItem>
