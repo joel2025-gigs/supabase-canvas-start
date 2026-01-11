@@ -97,8 +97,10 @@ const Assets = () => {
     if (isAuthenticated && isStaff()) {
       fetchAssets();
       fetchBranches();
+    } else if (isAuthenticated && !authLoading) {
+      setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authLoading, isStaff()]);
 
   const fetchAssets = async () => {
     try {

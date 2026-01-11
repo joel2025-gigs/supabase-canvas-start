@@ -79,8 +79,10 @@ const Branches = () => {
   useEffect(() => {
     if (isAuthenticated && isSuperAdmin()) {
       fetchBranches();
+    } else if (isAuthenticated && !authLoading) {
+      setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authLoading, isSuperAdmin()]);
 
   const fetchBranches = async () => {
     try {

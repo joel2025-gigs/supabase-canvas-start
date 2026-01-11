@@ -89,8 +89,10 @@ const Users = () => {
     if (isAuthenticated && isSuperAdmin()) {
       fetchUsers();
       fetchBranches();
+    } else if (isAuthenticated && !authLoading) {
+      setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authLoading, isSuperAdmin()]);
 
   const fetchUsers = async () => {
     try {
