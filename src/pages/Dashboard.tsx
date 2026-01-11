@@ -1,293 +1,461 @@
-import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bike, TrendingUp, Handshake, Building2, Users } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import JobManagement from "@/components/admin/JobManagement";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Button } from "@/components/ui/button";
-import { CreditApplicationForm } from "@/components/credit/CreditApplicationForm";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Users, 
+  Bike, 
+  CreditCard, 
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  DollarSign
+} from "lucide-react";
+import type { DashboardStats } from "@/lib/types";
 
-const Dashboard = () => {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-  const [products, setProducts] = useState<any[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<string>("");
-  const [loanTerm, setLoanTerm] = useState<number>(12);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-  const [showApplicationForm, setShowApplicationForm] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth/login");
-    }
-  }, [user, loading, navigate]);
+const StaffDashboard = () => {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { profile } = useAuth();
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("in_stock", true)
-        .order("name");
-      
-      if (!error && data) {
-        setProducts(data);
+    const fetchStats = async () => {
+      try {
+        // Fetch all stats in parallel
+        const [
+          clientsResult,
+          loansResult,
+          assetsResult,
+          paymentsResult,
+        ] = await Promise.all([
+          supabase.from("clients").select("id", { count: "exact" }).is("deleted_at", null),
+          supabase.from("loans").select("*").is("deleted_at", null),
+          supabase.from("assets").select("id, status").is("deleted_at", null),
+          supabase.from("payments").select("amount, status"),
+        ]);
+
+        const loans = loansResult.data || [];
+        const assets = assetsResult.data || [];
+        const payments = paymentsResult.data || [];
+
+        const activeLoans = loans.filter(l => l.status === 'active').length;
+        const overdueLoans = loans.filter(l => l.consecutive_missed > 0 && l.status === 'active').length;
+        const defaultedLoans = loans.filter(l => l.status === 'defaulted').length;
+        const totalDisbursed = loans
+          .filter(l => ['active', 'completed'].includes(l.status))
+          .reduce((sum, l) => sum + Number(l.total_amount), 0);
+        const totalCollected = payments
+          .filter(p => p.status === 'confirmed' || p.status === 'reconciled')
+          .reduce((sum, p) => sum + Number(p.amount), 0);
+        const pendingPayments = payments.filter(p => p.status === 'pending').length;
+        const availableAssets = assets.filter(a => a.status === 'available').length;
+
+        setStats({
+          totalClients: clientsResult.count || 0,
+          activeLoans,
+          totalDisbursed,
+          totalCollected,
+          pendingPayments,
+          overdueLoans,
+          defaultedLoans,
+          availableAssets,
+        });
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoadingProducts(false);
     };
 
-    const checkAdmin = async () => {
-      if (user) {
-        try {
-          const { data, error } = await supabase.functions.invoke('check-user-role', {
-            headers: {
-              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-            },
-          });
-          
-          if (!error && data) {
-            setIsAdmin(data.isAdmin || false);
-          }
-        } catch (error) {
-          console.error('Error checking admin status:', error);
-          setIsAdmin(false);
-        }
-      }
-    };
+    fetchStats();
+  }, []);
 
-    if (user) {
-      fetchProducts();
-      checkAdmin();
-    }
-  }, [user]);
+  const statCards = [
+    { label: "Total Clients", value: stats?.totalClients || 0, icon: Users, color: "text-blue-500" },
+    { label: "Active Loans", value: stats?.activeLoans || 0, icon: CreditCard, color: "text-green-500" },
+    { label: "Available Assets", value: stats?.availableAssets || 0, icon: Bike, color: "text-purple-500" },
+    { label: "Pending Payments", value: stats?.pendingPayments || 0, icon: Clock, color: "text-yellow-500" },
+    { label: "Overdue Loans", value: stats?.overdueLoans || 0, icon: AlertTriangle, color: "text-orange-500" },
+    { label: "Defaulted Loans", value: stats?.defaultedLoans || 0, icon: AlertTriangle, color: "text-red-500" },
+  ];
 
-  const calculateMonthlyPayment = () => {
-    const product = products.find(p => p.id === selectedProduct);
-    if (!product || !product.credit_price) return 0;
-    
-    const interestRate = 0.15; // 15% annual interest
-    const monthlyRate = interestRate / 12;
-    const principal = product.credit_price;
-    
-    // Calculate monthly payment using amortization formula
-    const monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) / 
-                          (Math.pow(1 + monthlyRate, loanTerm) - 1);
-    
-    return monthlyPayment;
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-UG", {
+      style: "currency",
+      currency: "UGX",
+      minimumFractionDigits: 0,
+    }).format(amount);
   };
-
-  const selectedProductData = products.find(p => p.id === selectedProduct);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
+      <DashboardLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-8 w-48" />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[...Array(8)].map((_, i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
-  if (!user) {
-    return null;
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">Welcome back, {profile?.full_name?.split(" ")[0] || "User"}</h1>
+          <p className="text-muted-foreground">Here's an overview of your branch operations.</p>
+        </div>
+
+        {/* Financial Summary */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-green-100">Total Disbursed</CardDescription>
+              <CardTitle className="text-3xl">{formatCurrency(stats?.totalDisbursed || 0)}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 text-green-100">
+                <TrendingUp className="h-4 w-4" />
+                <span className="text-sm">Active loan portfolio</span>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-blue-100">Total Collected</CardDescription>
+              <CardTitle className="text-3xl">{formatCurrency(stats?.totalCollected || 0)}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 text-blue-100">
+                <CheckCircle className="h-4 w-4" />
+                <span className="text-sm">Confirmed payments</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {statCards.map((stat) => (
+            <Card key={stat.label}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.label}
+                </CardTitle>
+                <stat.icon className={`h-5 w-5 ${stat.color}`} />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+const ClientDashboard = () => {
+  const [loan, setLoan] = useState<any>(null);
+  const [schedule, setSchedule] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user, profile } = useAuth();
+
+  useEffect(() => {
+    const fetchClientData = async () => {
+      if (!user) return;
+
+      try {
+        // Find client record linked to this user
+        const { data: clientData } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+
+        if (!clientData) {
+          setLoading(false);
+          return;
+        }
+
+        // Fetch active loan
+        const { data: loanData } = await supabase
+          .from("loans")
+          .select("*, asset:assets(*)")
+          .eq("client_id", clientData.id)
+          .in("status", ["active", "approved"])
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (loanData) {
+          setLoan(loanData);
+
+          // Fetch repayment schedule
+          const { data: scheduleData } = await supabase
+            .from("repayment_schedule")
+            .select("*")
+            .eq("loan_id", loanData.id)
+            .order("due_date", { ascending: true });
+
+          setSchedule(scheduleData || []);
+
+          // Fetch payment history
+          const { data: paymentData } = await supabase
+            .from("payments")
+            .select("*")
+            .eq("loan_id", loanData.id)
+            .order("received_at", { ascending: false });
+
+          setPayments(paymentData || []);
+        }
+      } catch (error) {
+        console.error("Error fetching client data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClientData();
+  }, [user]);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-UG", {
+      style: "currency",
+      currency: "UGX",
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-48" />
+          <Skeleton className="h-64" />
+        </div>
+      </DashboardLayout>
+    );
   }
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-grow bg-gradient-to-b from-background to-muted/20">
-        <div className="section-container py-12">
-          <h1 className="text-4xl font-bold mb-8">Welcome, {user.email}</h1>
-          
-          <Tabs defaultValue="loan" className="space-y-8">
-            <TabsList className={`grid w-full max-w-2xl ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
-              <TabsTrigger value="loan">Get Motorcycle Loan</TabsTrigger>
-              <TabsTrigger value="investor">Become an Investor</TabsTrigger>
-              {isAdmin && <TabsTrigger value="admin">Manage Jobs</TabsTrigger>}
-            </TabsList>
-
-            <TabsContent value="loan" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bike className="w-6 h-6" />
-                    Motorcycle Loan Calculator
-                  </CardTitle>
-                  <CardDescription>
-                    Select a motorcycle and loan period to calculate your monthly payments
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="product">Select Motorcycle</Label>
-                    <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                      <SelectTrigger id="product">
-                        <SelectValue placeholder="Choose a motorcycle" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {loadingProducts ? (
-                          <SelectItem value="loading" disabled>Loading...</SelectItem>
-                        ) : (
-                          products.map((product) => (
-                            <SelectItem key={product.id} value={product.id}>
-                              {product.name} - UGX {product.credit_price?.toLocaleString()}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {selectedProductData && (
-                    <div className="p-4 bg-muted rounded-lg space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Cash Price:</span>
-                        <span className="font-semibold">UGX {selectedProductData.cash_price?.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Credit Price:</span>
-                        <span className="font-semibold">UGX {selectedProductData.credit_price?.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <Label>Loan Period</Label>
-                      <span className="text-sm font-medium">{loanTerm} months</span>
-                    </div>
-                    <Slider
-                      value={[loanTerm]}
-                      onValueChange={(value) => setLoanTerm(value[0])}
-                      min={6}
-                      max={36}
-                      step={6}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>6 months</span>
-                      <span>36 months</span>
-                    </div>
-                  </div>
-
-                  {selectedProduct && (
-                    <div className="p-6 bg-primary/10 rounded-lg border-2 border-primary/20">
-                      <div className="text-center space-y-2">
-                        <p className="text-sm text-muted-foreground">Estimated Monthly Payment</p>
-                        <p className="text-3xl font-bold text-primary">
-                          UGX {calculateMonthlyPayment().toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Total: UGX {(calculateMonthlyPayment() * loanTerm).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <Button 
-                    className="w-full" 
-                    size="lg" 
-                    disabled={!selectedProduct}
-                    onClick={() => setShowApplicationForm(true)}
-                  >
-                    Apply for Loan
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="investor" className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2">
-                <Card className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="w-6 h-6 text-primary" />
-                      Investment Opportunities
-                    </CardTitle>
-                    <CardDescription>
-                      Partner with us to finance motorcycle purchases
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm">
-                      Join our investment program and earn returns by financing motorcycle purchases for qualified buyers.
-                    </p>
-                    <ul className="text-sm space-y-2 text-muted-foreground">
-                      <li>• Competitive returns on investment</li>
-                      <li>• Secured financing with collateral</li>
-                      <li>• Flexible investment terms</li>
-                      <li>• Regular income streams</li>
-                    </ul>
-                    <Button className="w-full">Learn More</Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Handshake className="w-6 h-6 text-primary" />
-                      Partnership Options
-                    </CardTitle>
-                    <CardDescription>
-                      Strategic partnerships for business growth
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                        <Users className="w-5 h-5 mt-0.5 text-primary" />
-                        <div>
-                          <h4 className="font-semibold text-sm">Financing SMEs</h4>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Partner with us to provide financing solutions for small and medium enterprises
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                        <Building2 className="w-5 h-5 mt-0.5 text-primary" />
-                        <div>
-                          <h4 className="font-semibold text-sm">Corporate Financing</h4>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Large-scale corporate financing solutions for fleet purchases and business expansion
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <Button className="w-full">Contact Us</Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            {isAdmin && (
-              <TabsContent value="admin">
-                <JobManagement />
-              </TabsContent>
-            )}
-          </Tabs>
+  if (!loan) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <CreditCard className="h-16 w-16 text-muted-foreground mb-4" />
+          <h2 className="text-2xl font-bold mb-2">No Active Loan</h2>
+          <p className="text-muted-foreground max-w-md">
+            You don't have an active loan yet. Visit one of our branches or contact a field officer to apply for asset financing.
+          </p>
         </div>
-      </main>
-      <Footer />
+      </DashboardLayout>
+    );
+  }
 
-      {selectedProduct && user && (
-        <CreditApplicationForm
-          open={showApplicationForm}
-          onOpenChange={setShowApplicationForm}
-          productId={selectedProduct}
-          loanTerm={loanTerm}
-          userId={user.id}
-          productName={selectedProductData?.name || ""}
-        />
-      )}
-    </div>
+  const nextPayment = schedule.find(s => !s.is_paid);
+  const paidInstallments = schedule.filter(s => s.is_paid).length;
+  const progressPercent = (paidInstallments / schedule.length) * 100;
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">Welcome, {profile?.full_name?.split(" ")[0] || "Client"}</h1>
+          <p className="text-muted-foreground">Your loan dashboard</p>
+        </div>
+
+        {/* Loan Summary */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="bg-gradient-to-br from-primary to-primary-light text-white">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-primary-foreground/70">Loan Balance</CardDescription>
+              <CardTitle className="text-3xl">{formatCurrency(loan.loan_balance)}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-primary-foreground/70">
+                of {formatCurrency(loan.total_amount)} total
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Next Payment</CardDescription>
+              <CardTitle className="text-2xl">
+                {nextPayment ? formatCurrency(nextPayment.amount_due) : "—"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                {nextPayment ? `Due: ${new Date(nextPayment.due_date).toLocaleDateString()}` : "All paid!"}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Progress</CardDescription>
+              <CardTitle className="text-2xl">{paidInstallments} / {schedule.length}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div 
+                  className="bg-green-500 h-2 rounded-full transition-all" 
+                  style={{ width: `${progressPercent}%` }} 
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Asset Info */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Your Asset</CardTitle>
+            <CardDescription>Details of your financed asset</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Type</span>
+                  <span className="font-medium capitalize">{loan.asset?.asset_type}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Brand/Model</span>
+                  <span className="font-medium">{loan.asset?.brand} {loan.asset?.model}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Registration</span>
+                  <span className="font-medium">{loan.asset?.registration_number || "Pending"}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">GPS Status</span>
+                  <span className="font-medium capitalize">{loan.asset?.gps_status?.replace("_", " ")}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Loan Status</span>
+                  <span className="font-medium capitalize">{loan.status}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Repayment</span>
+                  <span className="font-medium capitalize">{loan.repayment_frequency}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Upcoming Payments */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming Payments</CardTitle>
+            <CardDescription>Your next scheduled payments</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {schedule.filter(s => !s.is_paid).slice(0, 5).map((item) => (
+                <div key={item.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div>
+                    <div className="font-medium">Installment #{item.installment_number}</div>
+                    <div className="text-sm text-muted-foreground">
+                      Due: {new Date(item.due_date).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">{formatCurrency(item.amount_due)}</div>
+                    {item.is_overdue && (
+                      <div className="text-sm text-red-500">{item.days_overdue} days overdue</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {schedule.filter(s => !s.is_paid).length === 0 && (
+                <div className="text-center py-4 text-muted-foreground">
+                  <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                  All payments completed!
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Payments */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment History</CardTitle>
+            <CardDescription>Your recent payments</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {payments.slice(0, 5).map((payment) => (
+                <div key={payment.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div>
+                    <div className="font-medium">{payment.payment_reference}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {new Date(payment.received_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">{formatCurrency(payment.amount)}</div>
+                    <div className={`text-sm capitalize ${
+                      payment.status === 'confirmed' ? 'text-green-500' : 
+                      payment.status === 'pending' ? 'text-yellow-500' : 'text-muted-foreground'
+                    }`}>
+                      {payment.status}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {payments.length === 0 && (
+                <div className="text-center py-4 text-muted-foreground">
+                  No payments yet
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
   );
+};
+
+const Dashboard = () => {
+  const { loading, isAuthenticated, isStaff } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate("/auth/login");
+    }
+  }, [loading, isAuthenticated, navigate]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show different dashboard based on role
+  if (isStaff()) {
+    return <StaffDashboard />;
+  }
+
+  return <ClientDashboard />;
 };
 
 export default Dashboard;
