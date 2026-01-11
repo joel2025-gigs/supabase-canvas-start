@@ -14,376 +14,490 @@ export type Database = {
   }
   public: {
     Tables: {
-      blog_posts: {
+      assets: {
         Row: {
-          author_id: string | null
-          content: string
+          asset_type: string
+          branch_id: string
+          brand: string
+          chassis_number: string
+          color: string | null
           created_at: string | null
-          excerpt: string | null
-          featured_image: string | null
+          deleted_at: string | null
+          engine_number: string | null
+          gps_device_id: string | null
+          gps_status: string | null
           id: string
-          published: boolean | null
-          published_at: string | null
-          slug: string
-          title: string
+          local_id: string | null
+          model: string
+          notes: string | null
+          photo_urls: string[] | null
+          purchase_price: number
+          registered_by: string | null
+          registration_number: string | null
+          selling_price: number
+          status: Database["public"]["Enums"]["asset_status"] | null
+          sync_status: Database["public"]["Enums"]["sync_status"] | null
           updated_at: string | null
+          year: number | null
         }
         Insert: {
-          author_id?: string | null
-          content: string
+          asset_type: string
+          branch_id: string
+          brand: string
+          chassis_number: string
+          color?: string | null
           created_at?: string | null
-          excerpt?: string | null
-          featured_image?: string | null
+          deleted_at?: string | null
+          engine_number?: string | null
+          gps_device_id?: string | null
+          gps_status?: string | null
           id?: string
-          published?: boolean | null
-          published_at?: string | null
-          slug: string
-          title: string
+          local_id?: string | null
+          model: string
+          notes?: string | null
+          photo_urls?: string[] | null
+          purchase_price: number
+          registered_by?: string | null
+          registration_number?: string | null
+          selling_price: number
+          status?: Database["public"]["Enums"]["asset_status"] | null
+          sync_status?: Database["public"]["Enums"]["sync_status"] | null
           updated_at?: string | null
+          year?: number | null
         }
         Update: {
-          author_id?: string | null
-          content?: string
+          asset_type?: string
+          branch_id?: string
+          brand?: string
+          chassis_number?: string
+          color?: string | null
           created_at?: string | null
-          excerpt?: string | null
-          featured_image?: string | null
+          deleted_at?: string | null
+          engine_number?: string | null
+          gps_device_id?: string | null
+          gps_status?: string | null
           id?: string
-          published?: boolean | null
-          published_at?: string | null
-          slug?: string
-          title?: string
+          local_id?: string | null
+          model?: string
+          notes?: string | null
+          photo_urls?: string[] | null
+          purchase_price?: number
+          registered_by?: string | null
+          registration_number?: string | null
+          selling_price?: number
+          status?: Database["public"]["Enums"]["asset_status"] | null
+          sync_status?: Database["public"]["Enums"]["sync_status"] | null
           updated_at?: string | null
+          year?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "assets_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      categories: {
+      audit_logs: {
         Row: {
+          action: string
+          branch_id: string | null
           created_at: string | null
-          description: string | null
-          display_order: number | null
           id: string
-          image_url: string | null
+          ip_address: string | null
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          branch_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          branch_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      branches: {
+        Row: {
+          code: string
+          created_at: string | null
+          deleted_at: string | null
+          district: string | null
+          id: string
+          is_active: boolean | null
+          location: string | null
           name: string
-          slug: string
           updated_at: string | null
         }
         Insert: {
+          code: string
           created_at?: string | null
-          description?: string | null
-          display_order?: number | null
+          deleted_at?: string | null
+          district?: string | null
           id?: string
-          image_url?: string | null
+          is_active?: boolean | null
+          location?: string | null
           name: string
-          slug: string
           updated_at?: string | null
         }
         Update: {
+          code?: string
           created_at?: string | null
-          description?: string | null
-          display_order?: number | null
+          deleted_at?: string | null
+          district?: string | null
           id?: string
-          image_url?: string | null
+          is_active?: boolean | null
+          location?: string | null
           name?: string
-          slug?: string
           updated_at?: string | null
         }
         Relationships: []
       }
-      contact_messages: {
-        Row: {
-          created_at: string | null
-          email: string
-          id: string
-          message: string
-          name: string
-          phone: string
-          status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email: string
-          id?: string
-          message: string
-          name: string
-          phone: string
-          status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string
-          id?: string
-          message?: string
-          name?: string
-          phone?: string
-          status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      credit_applications: {
+      clients: {
         Row: {
           address: string
-          admin_notes: string | null
+          branch_id: string
           created_at: string | null
-          document_urls: string[] | null
-          down_payment: number | null
-          email: string
-          employment_status: string | null
+          deleted_at: string | null
+          district: string
           full_name: string
           id: string
+          id_photo_url: string | null
+          is_active: boolean | null
+          local_id: string | null
           monthly_income: number | null
+          national_id: string | null
+          next_of_kin_name: string | null
+          next_of_kin_phone: string | null
+          occupation: string | null
           phone: string
-          preferred_term: number | null
-          product_id: string | null
-          reviewed_at: string | null
-          status: Database["public"]["Enums"]["application_status"] | null
-          submitted_at: string | null
+          phone_secondary: string | null
+          photo_url: string | null
+          registered_by: string | null
+          sync_status: Database["public"]["Enums"]["sync_status"] | null
           updated_at: string | null
-          user_id: string
+          user_id: string | null
+          village: string | null
         }
         Insert: {
           address: string
-          admin_notes?: string | null
+          branch_id: string
           created_at?: string | null
-          document_urls?: string[] | null
-          down_payment?: number | null
-          email: string
-          employment_status?: string | null
+          deleted_at?: string | null
+          district: string
           full_name: string
           id?: string
+          id_photo_url?: string | null
+          is_active?: boolean | null
+          local_id?: string | null
           monthly_income?: number | null
+          national_id?: string | null
+          next_of_kin_name?: string | null
+          next_of_kin_phone?: string | null
+          occupation?: string | null
           phone: string
-          preferred_term?: number | null
-          product_id?: string | null
-          reviewed_at?: string | null
-          status?: Database["public"]["Enums"]["application_status"] | null
-          submitted_at?: string | null
+          phone_secondary?: string | null
+          photo_url?: string | null
+          registered_by?: string | null
+          sync_status?: Database["public"]["Enums"]["sync_status"] | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
+          village?: string | null
         }
         Update: {
           address?: string
-          admin_notes?: string | null
+          branch_id?: string
           created_at?: string | null
-          document_urls?: string[] | null
-          down_payment?: number | null
-          email?: string
-          employment_status?: string | null
+          deleted_at?: string | null
+          district?: string
           full_name?: string
           id?: string
+          id_photo_url?: string | null
+          is_active?: boolean | null
+          local_id?: string | null
           monthly_income?: number | null
+          national_id?: string | null
+          next_of_kin_name?: string | null
+          next_of_kin_phone?: string | null
+          occupation?: string | null
           phone?: string
-          preferred_term?: number | null
-          product_id?: string | null
-          reviewed_at?: string | null
-          status?: Database["public"]["Enums"]["application_status"] | null
-          submitted_at?: string | null
+          phone_secondary?: string | null
+          photo_url?: string | null
+          registered_by?: string | null
+          sync_status?: Database["public"]["Enums"]["sync_status"] | null
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
+          village?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "credit_applications_product_id_fkey"
-            columns: ["product_id"]
+            foreignKeyName: "clients_branch_id_fkey"
+            columns: ["branch_id"]
             isOneToOne: false
-            referencedRelation: "products"
+            referencedRelation: "branches"
             referencedColumns: ["id"]
           },
         ]
       }
-      installment_plans: {
+      loans: {
         Row: {
-          application_id: string
+          approved_at: string | null
+          approved_by: string | null
+          asset_id: string
+          branch_id: string
+          client_id: string
+          consecutive_missed: number | null
           created_at: string | null
-          down_payment: number
+          created_by: string | null
+          deleted_at: string | null
+          down_payment: number | null
+          end_date: string
           id: string
+          installment_amount: number
+          installments_paid: number | null
           interest_rate: number | null
-          monthly_payment: number
-          number_of_months: number
-          start_date: string | null
+          last_payment_date: string | null
+          loan_balance: number
+          loan_number: string
+          local_id: string | null
+          missed_payments: number | null
+          next_payment_date: string | null
+          penalty_amount: number | null
+          principal_amount: number
+          recovery_initiated_at: string | null
+          recovery_notes: string | null
+          repayment_frequency: Database["public"]["Enums"]["repayment_frequency"]
+          start_date: string
+          status: Database["public"]["Enums"]["loan_status"] | null
+          sync_status: Database["public"]["Enums"]["sync_status"] | null
           total_amount: number
+          total_installments: number
           updated_at: string | null
         }
         Insert: {
-          application_id: string
+          approved_at?: string | null
+          approved_by?: string | null
+          asset_id: string
+          branch_id: string
+          client_id: string
+          consecutive_missed?: number | null
           created_at?: string | null
-          down_payment: number
+          created_by?: string | null
+          deleted_at?: string | null
+          down_payment?: number | null
+          end_date: string
           id?: string
+          installment_amount: number
+          installments_paid?: number | null
           interest_rate?: number | null
-          monthly_payment: number
-          number_of_months: number
-          start_date?: string | null
+          last_payment_date?: string | null
+          loan_balance: number
+          loan_number: string
+          local_id?: string | null
+          missed_payments?: number | null
+          next_payment_date?: string | null
+          penalty_amount?: number | null
+          principal_amount: number
+          recovery_initiated_at?: string | null
+          recovery_notes?: string | null
+          repayment_frequency: Database["public"]["Enums"]["repayment_frequency"]
+          start_date: string
+          status?: Database["public"]["Enums"]["loan_status"] | null
+          sync_status?: Database["public"]["Enums"]["sync_status"] | null
           total_amount: number
+          total_installments: number
           updated_at?: string | null
         }
         Update: {
-          application_id?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          asset_id?: string
+          branch_id?: string
+          client_id?: string
+          consecutive_missed?: number | null
           created_at?: string | null
-          down_payment?: number
+          created_by?: string | null
+          deleted_at?: string | null
+          down_payment?: number | null
+          end_date?: string
           id?: string
+          installment_amount?: number
+          installments_paid?: number | null
           interest_rate?: number | null
-          monthly_payment?: number
-          number_of_months?: number
-          start_date?: string | null
+          last_payment_date?: string | null
+          loan_balance?: number
+          loan_number?: string
+          local_id?: string | null
+          missed_payments?: number | null
+          next_payment_date?: string | null
+          penalty_amount?: number | null
+          principal_amount?: number
+          recovery_initiated_at?: string | null
+          recovery_notes?: string | null
+          repayment_frequency?: Database["public"]["Enums"]["repayment_frequency"]
+          start_date?: string
+          status?: Database["public"]["Enums"]["loan_status"] | null
+          sync_status?: Database["public"]["Enums"]["sync_status"] | null
           total_amount?: number
+          total_installments?: number
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "installment_plans_application_id_fkey"
-            columns: ["application_id"]
+            foreignKeyName: "loans_asset_id_fkey"
+            columns: ["asset_id"]
             isOneToOne: false
-            referencedRelation: "credit_applications"
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
       }
-      installments: {
+      payments: {
         Row: {
           amount: number
+          branch_id: string
+          client_id: string
+          confirmed_at: string | null
+          confirmed_by: string | null
           created_at: string | null
-          due_date: string
           id: string
-          installment_number: number
-          paid: boolean | null
-          paid_at: string | null
-          plan_id: string
+          is_manual_override: boolean | null
+          is_reconciled: boolean | null
+          loan_id: string
+          local_id: string | null
+          override_reason: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_reference: string
+          phone_number: string | null
+          received_at: string | null
+          received_by: string | null
+          reconciled_at: string | null
+          reconciled_by: string | null
+          reconciliation_notes: string | null
+          status: Database["public"]["Enums"]["payment_status"] | null
+          sync_status: Database["public"]["Enums"]["sync_status"] | null
+          transaction_id: string | null
           updated_at: string | null
         }
         Insert: {
           amount: number
+          branch_id: string
+          client_id: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string | null
-          due_date: string
           id?: string
-          installment_number: number
-          paid?: boolean | null
-          paid_at?: string | null
-          plan_id: string
+          is_manual_override?: boolean | null
+          is_reconciled?: boolean | null
+          loan_id: string
+          local_id?: string | null
+          override_reason?: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_reference: string
+          phone_number?: string | null
+          received_at?: string | null
+          received_by?: string | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_notes?: string | null
+          status?: Database["public"]["Enums"]["payment_status"] | null
+          sync_status?: Database["public"]["Enums"]["sync_status"] | null
+          transaction_id?: string | null
           updated_at?: string | null
         }
         Update: {
           amount?: number
+          branch_id?: string
+          client_id?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string | null
-          due_date?: string
           id?: string
-          installment_number?: number
-          paid?: boolean | null
-          paid_at?: string | null
-          plan_id?: string
+          is_manual_override?: boolean | null
+          is_reconciled?: boolean | null
+          loan_id?: string
+          local_id?: string | null
+          override_reason?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_reference?: string
+          phone_number?: string | null
+          received_at?: string | null
+          received_by?: string | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_notes?: string | null
+          status?: Database["public"]["Enums"]["payment_status"] | null
+          sync_status?: Database["public"]["Enums"]["sync_status"] | null
+          transaction_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "installments_plan_id_fkey"
-            columns: ["plan_id"]
+            foreignKeyName: "payments_branch_id_fkey"
+            columns: ["branch_id"]
             isOneToOne: false
-            referencedRelation: "installment_plans"
+            referencedRelation: "branches"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      jobs: {
-        Row: {
-          created_at: string | null
-          description: string
-          employment_type: string | null
-          expires_at: string | null
-          id: string
-          location: string | null
-          published: boolean | null
-          requirements: string | null
-          salary_range: string | null
-          slug: string
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description: string
-          employment_type?: string | null
-          expires_at?: string | null
-          id?: string
-          location?: string | null
-          published?: boolean | null
-          requirements?: string | null
-          salary_range?: string | null
-          slug: string
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string
-          employment_type?: string | null
-          expires_at?: string | null
-          id?: string
-          location?: string | null
-          published?: boolean | null
-          requirements?: string | null
-          salary_range?: string | null
-          slug?: string
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      products: {
-        Row: {
-          cash_price: number
-          category_id: string | null
-          created_at: string | null
-          credit_price: number | null
-          description: string | null
-          featured: boolean | null
-          id: string
-          image_urls: string[] | null
-          in_stock: boolean | null
-          name: string
-          slug: string
-          specifications: Json | null
-          stock_quantity: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          cash_price: number
-          category_id?: string | null
-          created_at?: string | null
-          credit_price?: number | null
-          description?: string | null
-          featured?: boolean | null
-          id?: string
-          image_urls?: string[] | null
-          in_stock?: boolean | null
-          name: string
-          slug: string
-          specifications?: Json | null
-          stock_quantity?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          cash_price?: number
-          category_id?: string | null
-          created_at?: string | null
-          credit_price?: number | null
-          description?: string | null
-          featured?: boolean | null
-          id?: string
-          image_urls?: string[] | null
-          in_stock?: boolean | null
-          name?: string
-          slug?: string
-          specifications?: Json | null
-          stock_quantity?: number | null
-          updated_at?: string | null
-        }
-        Relationships: [
           {
-            foreignKeyName: "products_category_id_fkey"
-            columns: ["category_id"]
+            foreignKeyName: "payments_client_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "categories"
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
             referencedColumns: ["id"]
           },
         ]
@@ -392,46 +506,173 @@ export type Database = {
         Row: {
           address: string | null
           avatar_url: string | null
+          branch_id: string | null
           created_at: string | null
+          deleted_at: string | null
+          district: string | null
+          email: string | null
           full_name: string
           id: string
+          is_active: boolean | null
+          national_id: string | null
           phone: string | null
           updated_at: string | null
         }
         Insert: {
           address?: string | null
           avatar_url?: string | null
+          branch_id?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          district?: string | null
+          email?: string | null
           full_name: string
           id: string
+          is_active?: boolean | null
+          national_id?: string | null
           phone?: string | null
           updated_at?: string | null
         }
         Update: {
           address?: string | null
           avatar_url?: string | null
+          branch_id?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          district?: string | null
+          email?: string | null
           full_name?: string
           id?: string
+          is_active?: boolean | null
+          national_id?: string | null
           phone?: string | null
           updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      repayment_schedule: {
+        Row: {
+          amount_due: number
+          amount_paid: number | null
+          created_at: string | null
+          days_overdue: number | null
+          due_date: string
+          id: string
+          installment_number: number
+          is_overdue: boolean | null
+          is_paid: boolean | null
+          loan_id: string
+          paid_at: string | null
+          penalty_amount: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount_due: number
+          amount_paid?: number | null
+          created_at?: string | null
+          days_overdue?: number | null
+          due_date: string
+          id?: string
+          installment_number: number
+          is_overdue?: boolean | null
+          is_paid?: boolean | null
+          loan_id: string
+          paid_at?: string | null
+          penalty_amount?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount_due?: number
+          amount_paid?: number | null
+          created_at?: string | null
+          days_overdue?: number | null
+          due_date?: string
+          id?: string
+          installment_number?: number
+          is_overdue?: boolean | null
+          is_paid?: boolean | null
+          loan_id?: string
+          paid_at?: string | null
+          penalty_amount?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repayment_schedule_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_queue: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          local_id: string
+          operation: string
+          record_data: Json
+          retry_count: number | null
+          synced: boolean | null
+          synced_at: string | null
+          table_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          local_id: string
+          operation: string
+          record_data: Json
+          retry_count?: number | null
+          synced?: boolean | null
+          synced_at?: string | null
+          table_name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          local_id?: string
+          operation?: string
+          record_data?: Json
+          retry_count?: number | null
+          synced?: boolean | null
+          synced_at?: string | null
+          table_name?: string
+          user_id?: string
         }
         Relationships: []
       }
       user_roles: {
         Row: {
+          assigned_by: string | null
           created_at: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          assigned_by?: string | null
           created_at?: string | null
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          assigned_by?: string | null
           created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
@@ -444,6 +685,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_loan_number: { Args: never; Returns: string }
+      generate_payment_reference: { Args: never; Returns: string }
+      get_user_branch: { Args: { _user_id: string }; Returns: string }
+      has_any_role: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -453,14 +704,29 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
-      application_status:
+      app_role:
+        | "super_admin"
+        | "admin"
+        | "field_officer"
+        | "accountant"
+        | "client"
+      asset_status:
+        | "available"
+        | "assigned"
+        | "recovered"
+        | "transferred"
+        | "maintenance"
+      loan_status:
         | "pending"
-        | "reviewing"
         | "approved"
-        | "rejected"
+        | "active"
         | "completed"
-      payment_type: "cash" | "credit"
+        | "defaulted"
+        | "recovered"
+      payment_method: "mtn_momo" | "airtel_money" | "bank_transfer" | "cash"
+      payment_status: "pending" | "confirmed" | "rejected" | "reconciled"
+      repayment_frequency: "daily" | "weekly"
+      sync_status: "pending" | "synced" | "conflict"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -588,15 +854,32 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
-      application_status: [
-        "pending",
-        "reviewing",
-        "approved",
-        "rejected",
-        "completed",
+      app_role: [
+        "super_admin",
+        "admin",
+        "field_officer",
+        "accountant",
+        "client",
       ],
-      payment_type: ["cash", "credit"],
+      asset_status: [
+        "available",
+        "assigned",
+        "recovered",
+        "transferred",
+        "maintenance",
+      ],
+      loan_status: [
+        "pending",
+        "approved",
+        "active",
+        "completed",
+        "defaulted",
+        "recovered",
+      ],
+      payment_method: ["mtn_momo", "airtel_money", "bank_transfer", "cash"],
+      payment_status: ["pending", "confirmed", "rejected", "reconciled"],
+      repayment_frequency: ["daily", "weekly"],
+      sync_status: ["pending", "synced", "conflict"],
     },
   },
 } as const
