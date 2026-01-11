@@ -427,15 +427,15 @@ const Clients = () => {
                   <div className="space-y-2 md:col-span-2">
                     <Label>Assign Asset (Plate/Chassis)</Label>
                     <Select 
-                      value={formData.asset_id} 
-                      onValueChange={(v) => setFormData({ ...formData, asset_id: v })}
+                      value={formData.asset_id || "none"} 
+                      onValueChange={(v) => setFormData({ ...formData, asset_id: v === "none" ? "" : v })}
                       disabled={editingClient?.asset_id ? true : false}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select an available asset" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No Asset</SelectItem>
+                        <SelectItem value="none">No Asset</SelectItem>
                         {assets.map((asset) => (
                           <SelectItem key={asset.id} value={asset.id}>
                             <div className="flex items-center gap-2">
