@@ -189,6 +189,7 @@ export type Database = {
       clients: {
         Row: {
           address: string
+          asset_id: string | null
           branch_id: string
           created_at: string | null
           deleted_at: string | null
@@ -214,6 +215,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          asset_id?: string | null
           branch_id: string
           created_at?: string | null
           deleted_at?: string | null
@@ -239,6 +241,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          asset_id?: string | null
           branch_id?: string
           created_at?: string | null
           deleted_at?: string | null
@@ -263,6 +266,13 @@ export type Database = {
           village?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "clients_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "clients_branch_id_fkey"
             columns: ["branch_id"]

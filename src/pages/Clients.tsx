@@ -41,9 +41,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Plus, Search, Phone, MapPin, User, Loader2, Edit, Eye } from "lucide-react";
+import { Plus, Search, Phone, MapPin, User, Loader2, Edit, Eye, Bike } from "lucide-react";
 import { DISTRICTS } from "@/lib/constants";
-import type { Client, Branch } from "@/lib/types";
+import type { Client, Branch, Asset } from "@/lib/types";
 import { z } from "zod";
 
 const clientSchema = z.object({
@@ -58,11 +58,13 @@ const clientSchema = z.object({
   next_of_kin_phone: z.string().optional(),
   occupation: z.string().optional(),
   monthly_income: z.number().optional(),
+  asset_id: z.string().optional(),
 });
 
 const Clients = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("all");
@@ -88,6 +90,7 @@ const Clients = () => {
     next_of_kin_phone: "",
     occupation: "",
     monthly_income: "",
+    asset_id: "",
   });
 
   useEffect(() => {
@@ -100,16 +103,27 @@ const Clients = () => {
     if (isAuthenticated && isStaff()) {
       fetchClients();
       fetchBranches();
+      fetchAvailableAssets();
     } else if (isAuthenticated && !authLoading) {
       setLoading(false);
     }
   }, [isAuthenticated, authLoading, isStaff()]);
 
+  const fetchAvailableAssets = async () => {
+    const { data } = await supabase
+      .from("assets")
+      .select("*")
+      .eq("status", "available")
+      .is("deleted_at", null)
+      .order("brand", { ascending: true });
+    setAssets((data as Asset[]) || []);
+  };
+
   const fetchClients = async () => {
     try {
       const { data, error } = await supabase
         .from("clients")
-        .select("*, branch:branches(name)")
+        .select("*, branch:branches(name), asset:assets(id, asset_type, brand, model, chassis_number, registration_number)")
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
@@ -145,6 +159,7 @@ const Clients = () => {
       next_of_kin_phone: "",
       occupation: "",
       monthly_income: "",
+      asset_id: "",
     });
     setFormErrors({});
     setEditingClient(null);
@@ -164,6 +179,7 @@ const Clients = () => {
       next_of_kin_phone: client.next_of_kin_phone || "",
       occupation: client.occupation || "",
       monthly_income: client.monthly_income?.toString() || "",
+      asset_id: client.asset_id || "",
     });
     setIsDialogOpen(true);
   };
@@ -202,6 +218,7 @@ const Clients = () => {
         next_of_kin_phone: formData.next_of_kin_phone || null,
         occupation: formData.occupation || null,
         monthly_income: formData.monthly_income ? Number(formData.monthly_income) : null,
+        asset_id: formData.asset_id || null,
         branch_id: profile?.branch_id || branches[0]?.id,
         registered_by: user?.id,
       };
@@ -227,7 +244,12 @@ const Clients = () => {
           const localId = await saveLocally("clients", clientData);
           await addToSyncQueue("clients", "INSERT", localId!, clientData);
         }
-        toast.success(isOnline ? "Client registered successfully" : "Client saved locally. Will sync when online.");
+        const successMsg = formData.asset_id 
+          ? "Client registered & loan created successfully!" 
+          : isOnline 
+            ? "Client registered successfully" 
+            : "Client saved locally. Will sync when online.";
+        toast.success(successMsg);
       }
 
       resetForm();
@@ -245,7 +267,9 @@ const Clients = () => {
     const matchesSearch =
       client.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.phone.includes(searchTerm) ||
-      client.national_id?.includes(searchTerm);
+      client.national_id?.includes(searchTerm) ||
+      client.asset?.chassis_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.asset?.registration_number?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDistrict = selectedDistrict === "all" || client.district === selectedDistrict;
     return matchesSearch && matchesDistrict;
   });
@@ -400,6 +424,35 @@ const Clients = () => {
                       onChange={(e) => setFormData({ ...formData, monthly_income: e.target.value })}
                     />
                   </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Assign Asset (Plate/Chassis)</Label>
+                    <Select 
+                      value={formData.asset_id} 
+                      onValueChange={(v) => setFormData({ ...formData, asset_id: v })}
+                      disabled={editingClient?.asset_id ? true : false}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an available asset" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No Asset</SelectItem>
+                        {assets.map((asset) => (
+                          <SelectItem key={asset.id} value={asset.id}>
+                            <div className="flex items-center gap-2">
+                              <Bike className="h-4 w-4" />
+                              <span>{asset.brand} {asset.model}</span>
+                              <span className="text-muted-foreground">
+                                {asset.registration_number || asset.chassis_number}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {editingClient?.asset_id && (
+                      <p className="text-xs text-muted-foreground">Asset already assigned. Cannot change once linked.</p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }}>
@@ -456,8 +509,8 @@ const Clients = () => {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Phone</TableHead>
+                    <TableHead>Asset</TableHead>
                     <TableHead>District</TableHead>
-                    <TableHead>Occupation</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -478,12 +531,26 @@ const Clients = () => {
                         </div>
                       </TableCell>
                       <TableCell>
+                        {client.asset ? (
+                          <div className="flex flex-col">
+                            <span className="font-medium text-primary flex items-center gap-1">
+                              <Bike className="h-3 w-3" />
+                              {client.asset.brand} {client.asset.model}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {client.asset.registration_number || client.asset.chassis_number}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
                           {client.district}
                         </div>
                       </TableCell>
-                      <TableCell>{client.occupation || "—"}</TableCell>
                       <TableCell>
                         <Badge variant={client.is_active ? "default" : "secondary"}>
                           {client.is_active ? "Active" : "Inactive"}
