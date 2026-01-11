@@ -61,6 +61,7 @@ export interface Client {
   photo_url?: string;
   id_photo_url?: string;
   branch_id: string;
+  asset_id?: string;
   registered_by?: string;
   is_active: boolean;
   created_at: string;
@@ -69,6 +70,7 @@ export interface Client {
   sync_status: SyncStatus;
   local_id?: string;
   branch?: Branch;
+  asset?: Asset;
 }
 
 export interface Asset {
