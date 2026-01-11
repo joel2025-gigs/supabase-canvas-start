@@ -11,6 +11,11 @@ import Clients from "./pages/Clients";
 import Assets from "./pages/Assets";
 import Loans from "./pages/Loans";
 import Payments from "./pages/Payments";
+import Reports from "./pages/Reports";
+import Branches from "./pages/Branches";
+import Users from "./pages/Users";
+import AuditLogs from "./pages/AuditLogs";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +35,11 @@ const App = () => (
           <Route path="/assets" element={<Assets />} />
           <Route path="/loans" element={<Loans />} />
           <Route path="/payments" element={<Payments />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/branches" element={<Branches />} />
+          <Route path="/users" element={<Users />} />
+          <Route path="/audit-logs" element={<AuditLogs />} />
+          <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
