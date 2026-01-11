@@ -74,8 +74,10 @@ const Payments = () => {
     if (isAuthenticated && isStaff()) {
       fetchPayments();
       fetchLoans();
+    } else if (isAuthenticated && !authLoading) {
+      setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authLoading, isStaff()]);
 
   const fetchPayments = async () => {
     try {

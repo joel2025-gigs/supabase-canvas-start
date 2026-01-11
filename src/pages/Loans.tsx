@@ -77,8 +77,10 @@ const Loans = () => {
       fetchLoans();
       fetchClients();
       fetchAssets();
+    } else if (isAuthenticated && !authLoading) {
+      setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authLoading, isStaff()]);
 
   const fetchLoans = async () => {
     try {

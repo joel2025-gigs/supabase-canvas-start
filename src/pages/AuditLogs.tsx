@@ -56,8 +56,10 @@ const AuditLogs = () => {
     if (isAuthenticated && canViewAuditLogs) {
       fetchAuditLogs();
       fetchUsers();
+    } else if (isAuthenticated && !authLoading) {
+      setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authLoading, canViewAuditLogs]);
 
   const fetchAuditLogs = async () => {
     try {

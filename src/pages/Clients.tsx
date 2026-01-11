@@ -100,8 +100,10 @@ const Clients = () => {
     if (isAuthenticated && isStaff()) {
       fetchClients();
       fetchBranches();
+    } else if (isAuthenticated && !authLoading) {
+      setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authLoading, isStaff()]);
 
   const fetchClients = async () => {
     try {

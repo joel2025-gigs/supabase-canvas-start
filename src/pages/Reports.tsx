@@ -62,8 +62,10 @@ const Reports = () => {
   useEffect(() => {
     if (isAuthenticated && canViewReports) {
       fetchReportData();
+    } else if (isAuthenticated && !authLoading) {
+      setLoading(false);
     }
-  }, [isAuthenticated, dateRange]);
+  }, [isAuthenticated, authLoading, canViewReports, dateRange]);
 
   const getDateRange = () => {
     const now = new Date();
