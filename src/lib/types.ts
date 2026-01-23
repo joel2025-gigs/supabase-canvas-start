@@ -69,7 +69,9 @@ export interface Client {
   deleted_at?: string;
   sync_status: SyncStatus;
   local_id?: string;
-  branch?: Branch;
+  latitude?: number;
+  longitude?: number;
+  branch?: Partial<Branch>;
   asset?: Asset;
 }
 

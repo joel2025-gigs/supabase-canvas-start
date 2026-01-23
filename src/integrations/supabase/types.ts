@@ -198,7 +198,9 @@ export type Database = {
           id: string
           id_photo_url: string | null
           is_active: boolean | null
+          latitude: number | null
           local_id: string | null
+          longitude: number | null
           monthly_income: number | null
           national_id: string | null
           next_of_kin_name: string | null
@@ -224,7 +226,9 @@ export type Database = {
           id?: string
           id_photo_url?: string | null
           is_active?: boolean | null
+          latitude?: number | null
           local_id?: string | null
+          longitude?: number | null
           monthly_income?: number | null
           national_id?: string | null
           next_of_kin_name?: string | null
@@ -250,7 +254,9 @@ export type Database = {
           id?: string
           id_photo_url?: string | null
           is_active?: boolean | null
+          latitude?: number | null
           local_id?: string | null
+          longitude?: number | null
           monthly_income?: number | null
           national_id?: string | null
           next_of_kin_name?: string | null
