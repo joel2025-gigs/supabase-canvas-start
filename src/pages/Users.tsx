@@ -66,7 +66,7 @@ const userSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
   full_name: z.string().min(2, "Name is required"),
   phone: z.string().optional(),
-  role: z.enum(["super_admin", "admin", "operations_admin", "accountant", "sales_admin", "sales_officer", "credit_admin", "credit_officer", "recovery_admin", "recovery_officer", "operations_officer", "staff"]),
+  role: z.enum(["super_admin", "admin", "operations_admin", "accountant", "staff"]),
   branch_id: z.string().optional(),
   department: z.string().optional(),
 });
@@ -74,7 +74,7 @@ const userSchema = z.object({
 const editUserSchema = z.object({
   full_name: z.string().min(2, "Name is required"),
   phone: z.string().optional(),
-  role: z.enum(["super_admin", "admin", "operations_admin", "accountant", "sales_admin", "sales_officer", "credit_admin", "credit_officer", "recovery_admin", "recovery_officer", "operations_officer", "staff"]),
+  role: z.enum(["super_admin", "admin", "operations_admin", "accountant", "staff"]),
   branch_id: z.string().optional(),
   department: z.string().optional(),
   is_active: z.boolean(),
@@ -114,7 +114,7 @@ const Users = () => {
     password: "",
     full_name: "",
     phone: "",
-    role: "operations_officer" as AppRole,
+    role: "staff" as AppRole,
     branch_id: "",
     department: "" as string,
   });
@@ -122,7 +122,7 @@ const Users = () => {
   const [editFormData, setEditFormData] = useState({
     full_name: "",
     phone: "",
-    role: "operations_officer" as AppRole,
+    role: "staff" as AppRole,
     branch_id: "",
     department: "" as string,
     is_active: true,
@@ -193,7 +193,7 @@ const Users = () => {
       password: "",
       full_name: "",
       phone: "",
-      role: "operations_officer",
+      role: "staff",
       branch_id: "",
       department: "",
     });
@@ -204,7 +204,7 @@ const Users = () => {
     setEditFormData({
       full_name: "",
       phone: "",
-      role: "operations_officer",
+      role: "staff",
       branch_id: "",
       department: "",
       is_active: true,
@@ -598,12 +598,12 @@ const Users = () => {
 
                 <div className="space-y-2">
                   <Label>Department</Label>
-                  <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
+                  <Select value={formData.department || "none"} onValueChange={(v) => setFormData({ ...formData, department: v === "none" ? "" : v })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select department (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {Object.entries(DEPARTMENTS).map(([key, value]) => (
                         <SelectItem key={key} value={key}>
                           {value.label}
@@ -694,12 +694,12 @@ const Users = () => {
 
               <div className="space-y-2">
                 <Label>Department</Label>
-                <Select value={editFormData.department} onValueChange={(v) => setEditFormData({ ...editFormData, department: v })}>
+                <Select value={editFormData.department || "none"} onValueChange={(v) => setEditFormData({ ...editFormData, department: v === "none" ? "" : v })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select department (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {Object.entries(DEPARTMENTS).map(([key, value]) => (
                       <SelectItem key={key} value={key}>
                         {value.label}
