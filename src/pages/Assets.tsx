@@ -41,9 +41,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Plus, Search, Bike, Loader2, Edit, MapPin } from "lucide-react";
-import { ASSET_TYPES, ASSET_STATUSES } from "@/lib/constants";
+import { ASSET_TYPES, ASSET_STATUSES, ASSET_CATEGORIES } from "@/lib/constants";
 import type { Asset, Branch } from "@/lib/types";
 import { z } from "zod";
+
+type AssetCategory = "inventory" | "fixed_asset";
 
 const assetSchema = z.object({
   asset_type: z.enum(["motorcycle", "tricycle"]),
@@ -65,6 +67,7 @@ const Assets = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -75,6 +78,7 @@ const Assets = () => {
 
   const [formData, setFormData] = useState({
     asset_type: "motorcycle" as "motorcycle" | "tricycle",
+    asset_category: "inventory" as AssetCategory,
     brand: "",
     model: "",
     year: "",
@@ -111,7 +115,7 @@ const Assets = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setAssets(data as Asset[]);
+      setAssets((data || []) as unknown as Asset[]);
     } catch (error) {
       console.error("Error fetching assets:", error);
       toast.error("Failed to load assets");
@@ -131,6 +135,7 @@ const Assets = () => {
   const resetForm = () => {
     setFormData({
       asset_type: "motorcycle",
+      asset_category: "inventory",
       brand: "",
       model: "",
       year: "",
@@ -150,6 +155,7 @@ const Assets = () => {
     setEditingAsset(asset);
     setFormData({
       asset_type: asset.asset_type,
+      asset_category: asset.asset_category || "inventory",
       brand: asset.brand,
       model: asset.model,
       year: asset.year?.toString() || "",
@@ -190,6 +196,7 @@ const Assets = () => {
     try {
       const assetData = {
         asset_type: formData.asset_type,
+        asset_category: formData.asset_category,
         brand: formData.brand,
         model: formData.model,
         year: formData.year ? Number(formData.year) : null,
@@ -244,7 +251,8 @@ const Assets = () => {
       asset.registration_number?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedStatus === "all" || asset.status === selectedStatus;
     const matchesType = selectedType === "all" || asset.asset_type === selectedType;
-    return matchesSearch && matchesStatus && matchesType;
+    const matchesCategory = selectedCategory === "all" || asset.asset_category === selectedCategory;
+    return matchesSearch && matchesStatus && matchesType && matchesCategory;
   });
 
   if (authLoading || loading) {
@@ -295,6 +303,19 @@ const Assets = () => {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                 <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Category *</Label>
+                    <Select value={formData.asset_category} onValueChange={(v: AssetCategory) => setFormData({ ...formData, asset_category: v })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(ASSET_CATEGORIES).map(([key, value]) => (
+                          <SelectItem key={key} value={key}>{value.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-2">
                     <Label>Asset Type *</Label>
                     <Select value={formData.asset_type} onValueChange={(v: "motorcycle" | "tricycle") => setFormData({ ...formData, asset_type: v })}>
@@ -447,6 +468,17 @@ const Assets = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-full sm:w-40">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {Object.entries(ASSET_CATEGORIES).map(([key, value]) => (
+                    <SelectItem key={key} value={key}>{value.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={selectedType} onValueChange={setSelectedType}>
                 <SelectTrigger className="w-full sm:w-40">
                   <SelectValue placeholder="All Types" />
@@ -484,6 +516,7 @@ const Assets = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Asset</TableHead>
+                    <TableHead>Category</TableHead>
                     <TableHead>Chassis #</TableHead>
                     <TableHead>Registration</TableHead>
                     <TableHead>Selling Price</TableHead>
@@ -503,6 +536,11 @@ const Assets = () => {
                             <div className="text-sm text-muted-foreground">{asset.year || "—"} • {asset.color || "—"}</div>
                           </div>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {ASSET_CATEGORIES[asset.asset_category as keyof typeof ASSET_CATEGORIES]?.label || asset.asset_category || "Inventory"}
+                        </Badge>
                       </TableCell>
                       <TableCell className="font-mono text-sm">{asset.chassis_number}</TableCell>
                       <TableCell>{asset.registration_number || "—"}</TableCell>
@@ -526,7 +564,7 @@ const Assets = () => {
                   ))}
                   {filteredAssets.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         No assets found
                       </TableCell>
                     </TableRow>
