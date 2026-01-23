@@ -429,9 +429,9 @@ const Clients = () => {
                     <Select 
                       value={formData.asset_id || "none"} 
                       onValueChange={(v) => setFormData({ ...formData, asset_id: v === "none" ? "" : v })}
-                      disabled={editingClient?.asset_id ? true : false}
+                      disabled={!!editingClient?.asset_id}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={!editingClient?.asset_id && assets.length > 0 ? "" : ""}>
                         <SelectValue placeholder="Select an available asset" />
                       </SelectTrigger>
                       <SelectContent>
@@ -449,8 +449,12 @@ const Clients = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {editingClient?.asset_id && (
+                    {editingClient?.asset_id ? (
                       <p className="text-xs text-muted-foreground">Asset already assigned. Cannot change once linked.</p>
+                    ) : assets.length === 0 ? (
+                      <p className="text-xs text-warning">No available assets in inventory.</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Select an available asset to assign to this client.</p>
                     )}
                   </div>
                 </div>
