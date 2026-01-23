@@ -194,7 +194,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       >
         <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <img src={nawapLogo} alt={APP_NAME} className="h-10 w-10" />
+            <img src={nawapLogo} alt={APP_NAME} className="h-10 w-auto object-contain" />
           </Link>
           <Button
             variant="ghost"

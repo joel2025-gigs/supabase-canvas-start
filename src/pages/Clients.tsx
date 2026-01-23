@@ -41,7 +41,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Plus, Search, Phone, MapPin, User, Loader2, Edit, Eye, Bike } from "lucide-react";
+import { Plus, Search, Phone, MapPin, User, Loader2, Edit, Eye, Bike, Navigation } from "lucide-react";
 import { DISTRICTS } from "@/lib/constants";
 import type { Client, Branch, Asset } from "@/lib/types";
 import { z } from "zod";
@@ -91,7 +91,10 @@ const Clients = () => {
     occupation: "",
     monthly_income: "",
     asset_id: "",
+    latitude: "",
+    longitude: "",
   });
+  const [gettingLocation, setGettingLocation] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -160,9 +163,36 @@ const Clients = () => {
       occupation: "",
       monthly_income: "",
       asset_id: "",
+      latitude: "",
+      longitude: "",
     });
     setFormErrors({});
     setEditingClient(null);
+  };
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+    setGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData((prev) => ({
+          ...prev,
+          latitude: position.coords.latitude.toFixed(8),
+          longitude: position.coords.longitude.toFixed(8),
+        }));
+        toast.success("Location captured successfully");
+        setGettingLocation(false);
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        toast.error("Failed to get location. Please enable location services.");
+        setGettingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   const handleEdit = (client: Client) => {
@@ -180,6 +210,8 @@ const Clients = () => {
       occupation: client.occupation || "",
       monthly_income: client.monthly_income?.toString() || "",
       asset_id: client.asset_id || "",
+      latitude: client.latitude?.toString() || "",
+      longitude: client.longitude?.toString() || "",
     });
     setIsDialogOpen(true);
   };
@@ -219,6 +251,8 @@ const Clients = () => {
         occupation: formData.occupation || null,
         monthly_income: formData.monthly_income ? Number(formData.monthly_income) : null,
         asset_id: formData.asset_id || null,
+        latitude: formData.latitude ? Number(formData.latitude) : null,
+        longitude: formData.longitude ? Number(formData.longitude) : null,
         branch_id: profile?.branch_id || branches[0]?.id,
         registered_by: user?.id,
       };
@@ -423,6 +457,51 @@ const Clients = () => {
                       value={formData.monthly_income}
                       onChange={(e) => setFormData({ ...formData, monthly_income: e.target.value })}
                     />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="flex items-center gap-2">
+                      <Navigation className="h-4 w-4" />
+                      GPS Coordinates
+                    </Label>
+                    <div className="flex gap-2">
+                      <div className="flex-1 space-y-1">
+                        <Label htmlFor="latitude" className="text-xs text-muted-foreground">Latitude</Label>
+                        <Input
+                          id="latitude"
+                          placeholder="e.g., 0.31628200"
+                          value={formData.latitude}
+                          onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+                          readOnly
+                        />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <Label htmlFor="longitude" className="text-xs text-muted-foreground">Longitude</Label>
+                        <Input
+                          id="longitude"
+                          placeholder="e.g., 32.58219100"
+                          value={formData.longitude}
+                          onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                          readOnly
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleGetLocation}
+                          disabled={gettingLocation}
+                        >
+                          {gettingLocation ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Navigation className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Click the button to capture customer's current location for field visits.
+                    </p>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label>Assign Asset (Plate/Chassis)</Label>
