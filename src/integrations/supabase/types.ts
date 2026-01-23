@@ -282,6 +282,63 @@ export type Database = {
           },
         ]
       }
+      inquiries: {
+        Row: {
+          assigned_to: string | null
+          created_at: string | null
+          district: string | null
+          email: string | null
+          followed_up_at: string | null
+          followed_up_by: string | null
+          full_name: string
+          id: string
+          message: string | null
+          monthly_income: string | null
+          notes: string | null
+          occupation: string | null
+          phone: string
+          product_interest: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string | null
+          district?: string | null
+          email?: string | null
+          followed_up_at?: string | null
+          followed_up_by?: string | null
+          full_name: string
+          id?: string
+          message?: string | null
+          monthly_income?: string | null
+          notes?: string | null
+          occupation?: string | null
+          phone: string
+          product_interest?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string | null
+          district?: string | null
+          email?: string | null
+          followed_up_at?: string | null
+          followed_up_by?: string | null
+          full_name?: string
+          id?: string
+          message?: string | null
+          monthly_income?: string | null
+          notes?: string | null
+          occupation?: string | null
+          phone?: string
+          product_interest?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       loans: {
         Row: {
           approved_at: string | null
