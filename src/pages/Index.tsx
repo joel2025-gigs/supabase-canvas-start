@@ -58,7 +58,7 @@ const Index = () => {
               Uganda's Trusted Motorcycle Partner
             </div>
             <h1 className="text-4xl lg:text-6xl font-bold text-white leading-tight">
-              Bridging the Gap to <span className="text-primary">Motorcycle Ownership</span>
+              Bridging the Gap to <span className="text-accent">Motorcycle Ownership</span>
             </h1>
             <p className="text-lg text-white/90 leading-relaxed">
               NAWAP General Trading Ltd provides premium motorcycle distribution and flexible financing 
@@ -72,7 +72,7 @@ const Index = () => {
                 </Button>
               </Link>
               <Link to="/products">
-                <Button size="lg" variant="outline" className="text-lg px-8 border-white/30 text-white hover:bg-white/10 w-full sm:w-auto">
+                <Button size="lg" variant="secondary" className="text-lg px-8 w-full sm:w-auto">
                   View Products
                 </Button>
               </Link>

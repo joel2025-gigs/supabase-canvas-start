@@ -189,40 +189,40 @@ const CreditCollection = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active Loans</p>
-                <p className="text-2xl font-bold">{stats.totalActive}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.totalActive}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-yellow-500/10">
-                <Clock className="h-6 w-6 text-yellow-500" />
+              <div className="p-3 rounded-lg bg-warning/10">
+                <Clock className="h-6 w-6 text-warning" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pending Approval</p>
-                <p className="text-2xl font-bold">{stats.totalPending}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.totalPending}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-green-500/10">
-                <DollarSign className="h-6 w-6 text-green-500" />
+              <div className="p-3 rounded-lg bg-success/10">
+                <DollarSign className="h-6 w-6 text-success" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Outstanding</p>
-                <p className="text-xl font-bold">{formatCurrency(stats.totalOutstanding)}</p>
+                <p className="text-xl font-bold text-foreground">{formatCurrency(stats.totalOutstanding)}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-red-500/10">
-                <AlertTriangle className="h-6 w-6 text-red-500" />
+              <div className="p-3 rounded-lg bg-accent/10">
+                <AlertTriangle className="h-6 w-6 text-accent" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Due Today</p>
-                <p className="text-2xl font-bold">{stats.todaysDue}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.todaysDue}</p>
               </div>
             </CardContent>
           </Card>
@@ -292,7 +292,7 @@ const CreditCollection = () => {
                 {activeLoans.map((loan) => {
                   const isOverdue = loan.next_payment_date && loan.next_payment_date <= new Date().toISOString().split('T')[0];
                   return (
-                    <div key={loan.id} className={`border rounded-lg p-4 ${isOverdue ? 'border-red-300 bg-red-50/50' : ''}`}>
+                    <div key={loan.id} className={`border rounded-lg p-4 ${isOverdue ? 'border-accent/30 bg-accent/5' : ''}`}>
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
