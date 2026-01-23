@@ -902,9 +902,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_approve_loans: { Args: { _user_id: string }; Returns: boolean }
+      can_edit_operations: { Args: { _user_id: string }; Returns: boolean }
+      can_view_loans: { Args: { _user_id: string }; Returns: boolean }
       generate_loan_number: { Args: never; Returns: string }
       generate_payment_reference: { Args: never; Returns: string }
       get_user_branch: { Args: { _user_id: string }; Returns: string }
+      get_user_department: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["department"]
+      }
       has_any_role: {
         Args: {
           _roles: Database["public"]["Enums"]["app_role"][]
@@ -920,6 +927,8 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_department_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_department_officer: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
