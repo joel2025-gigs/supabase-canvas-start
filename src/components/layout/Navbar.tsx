@@ -17,6 +17,8 @@ const Navbar = () => {
     { name: "Contact", path: "/contact" },
   ];
 
+  // Staff can access login via /auth/login directly - not shown in nav for public
+
   return (
     <nav className="bg-background border-b sticky top-0 z-50 shadow-sm">
       <div className="section-container">
