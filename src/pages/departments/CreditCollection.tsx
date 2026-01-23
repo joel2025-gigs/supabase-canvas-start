@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -7,6 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -21,11 +27,13 @@ import {
   Users,
   ArrowRight,
   Send,
-  Bike
+  Bike,
+  Printer
 } from "lucide-react";
 import { InquiryCard, type InquiryWithDetails } from "@/components/loans/InquiryCard";
 import { InquiryEditDialog } from "@/components/loans/InquiryEditDialog";
 import { LoanApplicationDialog } from "@/components/loans/LoanApplicationDialog";
+import { LoanContract } from "@/components/loans/LoanContract";
 
 interface LoanWithDetails {
   id: string;
@@ -34,6 +42,10 @@ interface LoanWithDetails {
   total_amount: number;
   loan_balance: number;
   installment_amount: number;
+  total_installments: number;
+  down_payment: number;
+  interest_rate: number;
+  end_date: string;
   status: string;
   start_date: string;
   next_payment_date: string | null;
@@ -43,13 +55,27 @@ interface LoanWithDetails {
     full_name: string;
     phone: string;
     district: string;
+    national_id?: string;
+    address?: string;
+    village?: string;
+    next_of_kin_name?: string;
+    next_of_kin_phone?: string;
   } | null;
   asset: {
     asset_type: string;
     brand: string;
     model: string;
+    chassis_number: string;
+    engine_number?: string;
     registration_number: string | null;
+    color?: string;
   } | null;
+}
+
+interface ContractData {
+  loan: LoanWithDetails;
+  approvedBy: string;
+  approvedAt: string;
 }
 
 const formatCurrency = (amount: number) => {
@@ -63,6 +89,7 @@ const formatCurrency = (amount: number) => {
 const CreditCollection = () => {
   const { user, profile, loading: authLoading, hasAnyRole, roles } = useAuth();
   const navigate = useNavigate();
+  const contractRef = useRef<HTMLDivElement>(null);
   const [activeLoans, setActiveLoans] = useState<LoanWithDetails[]>([]);
   const [pendingLoans, setPendingLoans] = useState<LoanWithDetails[]>([]);
   const [underReviewLoans, setUnderReviewLoans] = useState<LoanWithDetails[]>([]);
@@ -72,6 +99,8 @@ const CreditCollection = () => {
   const [editingInquiry, setEditingInquiry] = useState<InquiryWithDetails | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [applicationInquiry, setApplicationInquiry] = useState<InquiryWithDetails | null>(null);
+  const [contractData, setContractData] = useState<ContractData | null>(null);
+  const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
   const [isApplicationOpen, setIsApplicationOpen] = useState(false);
   const [stats, setStats] = useState({
     totalActive: 0,
@@ -124,9 +153,10 @@ const CreditCollection = () => {
     try {
       const loanFields = `
         id, loan_number, principal_amount, total_amount, loan_balance,
-        installment_amount, status, start_date, next_payment_date, missed_payments, repayment_frequency,
-        client:clients(full_name, phone, district),
-        asset:assets(asset_type, brand, model, registration_number)
+        installment_amount, total_installments, down_payment, interest_rate, end_date,
+        status, start_date, next_payment_date, missed_payments, repayment_frequency,
+        client:clients(full_name, phone, district, national_id, address, village, next_of_kin_name, next_of_kin_phone),
+        asset:assets(asset_type, brand, model, chassis_number, engine_number, registration_number, color)
       `;
 
       // Fetch all loan stages in parallel
@@ -204,23 +234,79 @@ const CreditCollection = () => {
 
   const handleFinalApproval = async (loanId: string) => {
     try {
+      const approvedAt = new Date().toISOString();
+      
+      // Update loan status
       const { error } = await supabase
         .from("loans")
         .update({ 
           status: 'active',
           approved_by: user?.id,
-          approved_at: new Date().toISOString()
+          approved_at: approvedAt
         })
         .eq("id", loanId);
 
       if (error) throw error;
       
-      toast.success("Loan approved and activated! Client can now leave with their asset.");
+      // Find the loan from awaiting approval list for contract
+      const loan = awaitingApprovalLoans.find(l => l.id === loanId);
+      
+      if (loan) {
+        // Prepare contract data and open print dialog
+        setContractData({
+          loan,
+          approvedBy: profile?.full_name || 'Authorized Officer',
+          approvedAt
+        });
+        setIsContractDialogOpen(true);
+      }
+      
+      toast.success("Loan approved and activated! Printing contract...");
       fetchData();
     } catch (error) {
       console.error("Error approving loan:", error);
       toast.error("Failed to approve loan");
     }
+  };
+
+  const handlePrintContract = () => {
+    const printContent = contractRef.current;
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error("Please allow popups to print the contract");
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Loan Contract - ${contractData?.loan.loan_number}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Times New Roman', serif; padding: 20px; }
+            @media print {
+              body { padding: 0; }
+              .page-break-inside-avoid { page-break-inside: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent.innerHTML}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+    
+    setIsContractDialogOpen(false);
+    setContractData(null);
   };
 
   const handleEditInquiry = (inquiry: InquiryWithDetails) => {
@@ -667,6 +753,70 @@ const CreditCollection = () => {
         userId={user?.id || ''}
         userBranchId={profile?.branch_id}
       />
+
+      {/* Contract Print Dialog */}
+      <Dialog open={isContractDialogOpen} onOpenChange={setIsContractDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Loan Contract - {contractData?.loan.loan_number}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {contractData && contractData.loan.client && contractData.loan.asset && (
+            <div className="space-y-4">
+              <LoanContract
+                ref={contractRef}
+                loan={{
+                  loan_number: contractData.loan.loan_number,
+                  principal_amount: contractData.loan.principal_amount,
+                  total_amount: contractData.loan.total_amount,
+                  down_payment: contractData.loan.down_payment,
+                  loan_balance: contractData.loan.loan_balance,
+                  installment_amount: contractData.loan.installment_amount,
+                  total_installments: contractData.loan.total_installments,
+                  repayment_frequency: contractData.loan.repayment_frequency,
+                  interest_rate: contractData.loan.interest_rate,
+                  start_date: contractData.loan.start_date,
+                  end_date: contractData.loan.end_date,
+                }}
+                client={{
+                  full_name: contractData.loan.client.full_name,
+                  phone: contractData.loan.client.phone,
+                  national_id: contractData.loan.client.national_id,
+                  address: contractData.loan.client.address || '',
+                  district: contractData.loan.client.district,
+                  village: contractData.loan.client.village,
+                  next_of_kin_name: contractData.loan.client.next_of_kin_name,
+                  next_of_kin_phone: contractData.loan.client.next_of_kin_phone,
+                }}
+                asset={{
+                  asset_type: contractData.loan.asset.asset_type,
+                  brand: contractData.loan.asset.brand,
+                  model: contractData.loan.asset.model,
+                  chassis_number: contractData.loan.asset.chassis_number,
+                  engine_number: contractData.loan.asset.engine_number,
+                  registration_number: contractData.loan.asset.registration_number || undefined,
+                  color: contractData.loan.asset.color,
+                }}
+                approvedBy={contractData.approvedBy}
+                approvedAt={contractData.approvedAt}
+              />
+              
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setIsContractDialogOpen(false)}>
+                  Close
+                </Button>
+                <Button onClick={handlePrintContract}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print Contract
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
