@@ -17,6 +17,7 @@ import Users from "./pages/Users";
 import AuditLogs from "./pages/AuditLogs";
 import Settings from "./pages/Settings";
 import Products from "./pages/Products";
+import ProductManagement from "./pages/ProductManagement";
 import About from "./pages/About";
 import Careers from "./pages/Careers";
 import Contact from "./pages/Contact";
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/audit-logs" element={<AuditLogs />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/product-management" element={<ProductManagement />} />
           <Route path="/about" element={<About />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/contact" element={<Contact />} />
