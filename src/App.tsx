@@ -28,7 +28,7 @@ import NotFound from "./pages/NotFound";
 import Sales from "./pages/departments/Sales";
 import CreditCollection from "./pages/departments/CreditCollection";
 import Recovery from "./pages/departments/Recovery";
-import Operations from "./pages/departments/Operations";
+
 
 const queryClient = new QueryClient();
 
@@ -67,7 +67,6 @@ const App = () => (
           {/* Department routes */}
           <Route path="/departments/sales" element={<Sales />} />
           <Route path="/departments/credit-collection" element={<CreditCollection />} />
-          <Route path="/departments/operations" element={<Operations />} />
           <Route path="/departments/recovery" element={<Recovery />} />
           
           {/* Catch-all */}
