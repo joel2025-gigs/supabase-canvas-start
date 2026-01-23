@@ -14,19 +14,12 @@ export const REPAYMENT_FREQUENCIES = {
   weekly: { label: "Weekly", daysPerPeriod: 7 },
 } as const;
 
-// User roles with labels - New department-based structure
+// User roles with labels - Simplified structure
 export const USER_ROLES = {
   super_admin: { label: "Super Admin", description: "Full system access" },
   admin: { label: "Admin", description: "OPERATIONS + LOANS access, no ADMIN section" },
   operations_admin: { label: "Operations Admin", description: "Edit OPERATIONS, view-only LOANS" },
   accountant: { label: "Accountant", description: "View-only, can download reports" },
-  sales_admin: { label: "Sales Admin", description: "Manage Sales department" },
-  sales_officer: { label: "Sales Officer", description: "Basic Sales tasks" },
-  credit_admin: { label: "Credit Admin", description: "Final loan approval, manage Credit dept" },
-  credit_officer: { label: "Credit Officer", description: "Create loan applications" },
-  recovery_admin: { label: "Recovery Admin", description: "Manage Recovery department" },
-  recovery_officer: { label: "Recovery Officer", description: "Basic Recovery tasks" },
-  operations_officer: { label: "Operations Officer", description: "Basic Operations tasks" },
   staff: { label: "Staff", description: "Department-specific access" },
 } as const;
 
