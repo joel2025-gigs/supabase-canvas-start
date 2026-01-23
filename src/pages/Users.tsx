@@ -22,6 +22,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -36,10 +46,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Plus, Shield, Loader2, Edit, UserPlus } from "lucide-react";
+import { Plus, Shield, Loader2, MoreHorizontal, UserPlus, Pencil, Trash2, KeyRound } from "lucide-react";
 import { USER_ROLES } from "@/lib/constants";
 import type { Profile, Branch, AppRole } from "@/lib/types";
 import { z } from "zod";
@@ -53,6 +70,22 @@ const userSchema = z.object({
   branch_id: z.string().optional(),
 });
 
+const editUserSchema = z.object({
+  full_name: z.string().min(2, "Name is required"),
+  phone: z.string().optional(),
+  role: z.enum(["super_admin", "admin", "field_officer", "accountant", "client"]),
+  branch_id: z.string().optional(),
+  is_active: z.boolean(),
+});
+
+const passwordSchema = z.object({
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 interface UserWithRole extends Profile {
   roles: AppRole[];
 }
@@ -64,6 +97,10 @@ const Users = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -77,6 +114,19 @@ const Users = () => {
     phone: "",
     role: "field_officer" as AppRole,
     branch_id: "",
+  });
+
+  const [editFormData, setEditFormData] = useState({
+    full_name: "",
+    phone: "",
+    role: "field_officer" as AppRole,
+    branch_id: "",
+    is_active: true,
+  });
+
+  const [passwordFormData, setPasswordFormData] = useState({
+    password: "",
+    confirmPassword: "",
   });
 
   useEffect(() => {
@@ -96,7 +146,6 @@ const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      // Get profiles with their roles
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select("*, branch:branches(name)")
@@ -105,12 +154,10 @@ const Users = () => {
 
       if (profilesError) throw profilesError;
 
-      // Get all user roles
       const { data: rolesData } = await supabase
         .from("user_roles")
         .select("user_id, role");
 
-      // Combine profiles with roles
       const usersWithRoles = (profilesData || []).map((profile: any) => ({
         ...profile,
         roles: (rolesData || [])
@@ -148,6 +195,26 @@ const Users = () => {
     setFormErrors({});
   };
 
+  const resetEditForm = () => {
+    setEditFormData({
+      full_name: "",
+      phone: "",
+      role: "field_officer",
+      branch_id: "",
+      is_active: true,
+    });
+    setFormErrors({});
+    setEditingUser(null);
+  };
+
+  const resetPasswordForm = () => {
+    setPasswordFormData({
+      password: "",
+      confirmPassword: "",
+    });
+    setFormErrors({});
+  };
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormErrors({});
@@ -162,7 +229,6 @@ const Users = () => {
       return;
     }
 
-    // Require branch for non-super-admin roles
     if (formData.role !== "super_admin" && !formData.branch_id) {
       setFormErrors({ branch_id: "Branch is required for this role" });
       return;
@@ -171,7 +237,6 @@ const Users = () => {
     setSubmitting(true);
 
     try {
-      // Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -186,10 +251,8 @@ const Users = () => {
       if (authError) throw authError;
       if (!authData.user) throw new Error("Failed to create user");
 
-      // Wait a moment for the trigger to create the profile
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Update profile with branch
       if (formData.branch_id) {
         await supabase
           .from("profiles")
@@ -197,16 +260,13 @@ const Users = () => {
           .eq("id", authData.user.id);
       }
 
-      // Update role (trigger creates 'client' by default)
       if (formData.role !== "client") {
-        // Delete the default client role
         await supabase
           .from("user_roles")
           .delete()
           .eq("user_id", authData.user.id)
           .eq("role", "client");
 
-        // Add the new role
         await supabase
           .from("user_roles")
           .insert({ user_id: authData.user.id, role: formData.role, assigned_by: user?.id });
@@ -224,15 +284,154 @@ const Users = () => {
     }
   };
 
+  const handleEditUser = (userToEdit: UserWithRole) => {
+    setEditingUser(userToEdit);
+    setEditFormData({
+      full_name: userToEdit.full_name,
+      phone: userToEdit.phone || "",
+      role: userToEdit.roles[0] || "client",
+      branch_id: userToEdit.branch_id || "",
+      is_active: userToEdit.is_active,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setFormErrors({});
+
+    const result = editUserSchema.safeParse(editFormData);
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        errors[err.path[0] as string] = err.message;
+      });
+      setFormErrors(errors);
+      return;
+    }
+
+    if (editFormData.role !== "super_admin" && !editFormData.branch_id) {
+      setFormErrors({ branch_id: "Branch is required for this role" });
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Update profile
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          full_name: editFormData.full_name,
+          phone: editFormData.phone || null,
+          branch_id: editFormData.branch_id || null,
+          is_active: editFormData.is_active,
+        })
+        .eq("id", editingUser.id);
+
+      if (profileError) throw profileError;
+
+      // Update role if changed
+      const currentRole = editingUser.roles[0];
+      if (currentRole !== editFormData.role) {
+        await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", editingUser.id);
+
+        await supabase
+          .from("user_roles")
+          .insert({ user_id: editingUser.id, role: editFormData.role, assigned_by: user?.id });
+      }
+
+      toast.success("User updated successfully");
+      resetEditForm();
+      setIsEditDialogOpen(false);
+      fetchUsers();
+    } catch (error: any) {
+      console.error("Error updating user:", error);
+      toast.error(error.message || "Failed to update user");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleOpenPasswordDialog = (userToEdit: UserWithRole) => {
+    setEditingUser(userToEdit);
+    setPasswordFormData({ password: "", confirmPassword: "" });
+    setIsPasswordDialogOpen(true);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setFormErrors({});
+
+    const result = passwordSchema.safeParse(passwordFormData);
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        errors[err.path[0] as string] = err.message;
+      });
+      setFormErrors(errors);
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Use admin API to update user password
+      const { error } = await supabase.auth.admin.updateUserById(editingUser.id, {
+        password: passwordFormData.password,
+      });
+
+      if (error) throw error;
+
+      toast.success("Password updated successfully");
+      resetPasswordForm();
+      setIsPasswordDialogOpen(false);
+      setEditingUser(null);
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      toast.error(error.message || "Failed to change password. Admin API access required.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!editingUser) return;
+    setSubmitting(true);
+
+    try {
+      // Soft delete by setting deleted_at
+      const { error } = await supabase
+        .from("profiles")
+        .update({ deleted_at: new Date().toISOString(), is_active: false })
+        .eq("id", editingUser.id);
+
+      if (error) throw error;
+
+      toast.success("User deleted successfully");
+      setDeleteDialogOpen(false);
+      setEditingUser(null);
+      fetchUsers();
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast.error(error.message || "Failed to delete user");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleUpdateRole = async (userId: string, newRole: AppRole) => {
     try {
-      // Delete existing roles
       await supabase
         .from("user_roles")
         .delete()
         .eq("user_id", userId);
 
-      // Add new role
       await supabase
         .from("user_roles")
         .insert({ user_id: userId, role: newRole, assigned_by: user?.id });
@@ -392,6 +591,170 @@ const Users = () => {
           </Dialog>
         </div>
 
+        {/* Edit User Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) resetEditForm(); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>
+                Update user information
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdateUser} className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_full_name">Full Name *</Label>
+                <Input
+                  id="edit_full_name"
+                  value={editFormData.full_name}
+                  onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
+                  className={formErrors.full_name ? "border-destructive" : ""}
+                />
+                {formErrors.full_name && <p className="text-sm text-destructive">{formErrors.full_name}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit_phone">Phone</Label>
+                <Input
+                  id="edit_phone"
+                  value={editFormData.phone}
+                  onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Role *</Label>
+                <Select value={editFormData.role} onValueChange={(v: AppRole) => setEditFormData({ ...editFormData, role: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(USER_ROLES).map(([key, value]) => (
+                      <SelectItem key={key} value={key}>
+                        {value.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {editFormData.role !== "super_admin" && (
+                <div className="space-y-2">
+                  <Label>Branch *</Label>
+                  <Select value={editFormData.branch_id} onValueChange={(v) => setEditFormData({ ...editFormData, branch_id: v })}>
+                    <SelectTrigger className={formErrors.branch_id ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formErrors.branch_id && <p className="text-sm text-destructive">{formErrors.branch_id}</p>}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select 
+                  value={editFormData.is_active ? "active" : "inactive"} 
+                  onValueChange={(v) => setEditFormData({ ...editFormData, is_active: v === "active" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => { setIsEditDialogOpen(false); resetEditForm(); }}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                  Update User
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Change Password Dialog */}
+        <Dialog open={isPasswordDialogOpen} onOpenChange={(open) => { setIsPasswordDialogOpen(open); if (!open) { resetPasswordForm(); setEditingUser(null); } }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Change Password</DialogTitle>
+              <DialogDescription>
+                Set a new password for {editingUser?.full_name}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleChangePassword} className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="new_password">New Password *</Label>
+                <Input
+                  id="new_password"
+                  type="password"
+                  value={passwordFormData.password}
+                  onChange={(e) => setPasswordFormData({ ...passwordFormData, password: e.target.value })}
+                  className={formErrors.password ? "border-destructive" : ""}
+                />
+                {formErrors.password && <p className="text-sm text-destructive">{formErrors.password}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm_password">Confirm Password *</Label>
+                <Input
+                  id="confirm_password"
+                  type="password"
+                  value={passwordFormData.confirmPassword}
+                  onChange={(e) => setPasswordFormData({ ...passwordFormData, confirmPassword: e.target.value })}
+                  className={formErrors.confirmPassword ? "border-destructive" : ""}
+                />
+                {formErrors.confirmPassword && <p className="text-sm text-destructive">{formErrors.confirmPassword}</p>}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => { setIsPasswordDialogOpen(false); resetPasswordForm(); setEditingUser(null); }}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                  Change Password
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete User</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete {editingUser?.full_name}? This action will deactivate the user account.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setEditingUser(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteUser}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={submitting}
+              >
+                {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Stats by Role */}
         <div className="grid gap-4 md:grid-cols-5">
           {Object.entries(USER_ROLES).map(([key, value]) => {
@@ -450,6 +813,7 @@ const Users = () => {
                     <TableHead>Branch</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -460,30 +824,47 @@ const Users = () => {
                       <TableCell>{u.phone || "—"}</TableCell>
                       <TableCell>{(u as any).branch?.name || "—"}</TableCell>
                       <TableCell>
-                        <Select
-                          value={u.roles[0] || "client"}
-                          onValueChange={(v: AppRole) => handleUpdateRole(u.id, v)}
-                        >
-                          <SelectTrigger className="w-36 h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(USER_ROLES).map(([key, value]) => (
-                              <SelectItem key={key} value={key}>{value.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Badge variant="outline">
+                          {USER_ROLES[u.roles[0] as keyof typeof USER_ROLES]?.label || u.roles[0] || "No role"}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant={u.is_active ? "default" : "secondary"}>
                           {u.is_active ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditUser(u)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit User
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOpenPasswordDialog(u)}>
+                              <KeyRound className="h-4 w-4 mr-2" />
+                              Change Password
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => { setEditingUser(u); setDeleteDialogOpen(true); }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete User
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {filteredUsers.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         No users found
                       </TableCell>
                     </TableRow>

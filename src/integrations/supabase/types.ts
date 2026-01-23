@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       assets: {
         Row: {
+          asset_category: string
           asset_type: string
           branch_id: string
           brand: string
@@ -41,6 +42,7 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          asset_category?: string
           asset_type: string
           branch_id: string
           brand: string
@@ -66,6 +68,7 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          asset_category?: string
           asset_type?: string
           branch_id?: string
           brand?: string

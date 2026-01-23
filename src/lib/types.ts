@@ -75,9 +75,12 @@ export interface Client {
   asset?: Asset;
 }
 
+export type AssetCategory = 'inventory' | 'fixed_asset';
+
 export interface Asset {
   id: string;
   asset_type: 'motorcycle' | 'tricycle';
+  asset_category: AssetCategory;
   brand: string;
   model: string;
   year?: number;
@@ -99,7 +102,7 @@ export interface Asset {
   deleted_at?: string;
   sync_status: SyncStatus;
   local_id?: string;
-  branch?: Branch;
+  branch?: Partial<Branch>;
 }
 
 export interface Loan {

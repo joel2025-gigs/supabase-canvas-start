@@ -55,6 +55,12 @@ export const ASSET_TYPES = {
   tricycle: { label: "Tricycle", icon: "🛺" },
 } as const;
 
+// Asset categories
+export const ASSET_CATEGORIES = {
+  inventory: { label: "Inventory", description: "Motorcycles/Tricycles for sale" },
+  fixed_asset: { label: "Fixed Asset", description: "Office equipment, vehicles, furniture" },
+} as const;
+
 // Asset statuses
 export const ASSET_STATUSES = {
   available: { label: "Available", color: "bg-green-100 text-green-800" },
