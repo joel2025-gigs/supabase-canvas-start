@@ -6,102 +6,102 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 220 20% 10%;
+    --background: 0 0% 98%;
+    --foreground: 222 47% 23%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
+    --card-foreground: 222 47% 23%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
+    --popover-foreground: 222 47% 23%;
 
-    --primary: 174 72% 46%;
-    --primary-foreground: 220 25% 8%;
-    --primary-light: 174 72% 55%;
-    --primary-lighter: 174 72% 85%;
+    --primary: 222 47% 23%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 222 47% 35%;
+    --primary-lighter: 222 47% 85%;
 
     --accent: 356 82% 51%;
     --accent-foreground: 0 0% 100%;
-    --accent-light: 356 82% 65%;
+    --accent-light: 356 82% 60%;
     --accent-lighter: 356 82% 95%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 220 20% 10%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 23%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 356 82% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 174 72% 46%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 222 47% 23%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 174 72% 46%;
-    --sidebar-primary-foreground: 220 25% 8%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 174 72% 46%;
+    --sidebar-background: 222 47% 23%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 356 82% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 30%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 222 47% 30%;
+    --sidebar-ring: 356 82% 51%;
 
     /* Custom accent colors for dashboard */
-    --cyan: 174 72% 46%;
-    --cyan-glow: 174 72% 56%;
-    --success: 142 76% 45%;
-    --warning: 45 93% 58%;
+    --cyan: 222 47% 23%;
+    --cyan-glow: 222 47% 35%;
+    --success: 142 76% 36%;
+    --warning: 45 93% 47%;
     --info: 217 91% 60%;
   }
 
   .dark {
-    --background: 222 35% 7%;
-    --foreground: 210 40% 98%;
+    --background: 222 47% 11%;
+    --foreground: 0 0% 98%;
 
-    --card: 222 35% 10%;
-    --card-foreground: 210 40% 98%;
+    --card: 222 47% 15%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 222 35% 10%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 222 47% 15%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 174 72% 46%;
-    --primary-foreground: 220 25% 8%;
-    --primary-light: 174 72% 55%;
-    --primary-lighter: 174 72% 30%;
+    --primary: 356 82% 51%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 356 82% 60%;
+    --primary-lighter: 356 82% 25%;
 
     --accent: 356 82% 55%;
     --accent-foreground: 0 0% 100%;
     --accent-light: 356 82% 65%;
     --accent-lighter: 356 82% 25%;
 
-    --secondary: 222 35% 15%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 222 47% 20%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 222 35% 15%;
-    --muted-foreground: 215 20.2% 55.1%;
+    --muted: 222 47% 20%;
+    --muted-foreground: 220 14% 60%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 356 82% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 222 25% 18%;
-    --input: 222 25% 18%;
-    --ring: 174 72% 46%;
+    --border: 222 47% 25%;
+    --input: 222 47% 25%;
+    --ring: 356 82% 51%;
 
-    --sidebar-background: 222 35% 8%;
-    --sidebar-foreground: 210 40% 90%;
-    --sidebar-primary: 174 72% 46%;
-    --sidebar-primary-foreground: 220 25% 8%;
-    --sidebar-accent: 222 35% 15%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 25% 15%;
-    --sidebar-ring: 174 72% 46%;
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 356 82% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 18%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 222 47% 18%;
+    --sidebar-ring: 356 82% 51%;
 
     /* Custom accent colors for dashboard */
-    --cyan: 174 72% 46%;
-    --cyan-glow: 174 72% 56%;
+    --cyan: 356 82% 51%;
+    --cyan-glow: 356 82% 60%;
     --success: 142 76% 45%;
     --warning: 45 93% 58%;
     --info: 217 91% 60%;
