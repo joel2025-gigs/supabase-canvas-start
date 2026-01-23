@@ -1,9 +1,12 @@
+import { useEffect, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { CheckCircle2, Bike, Truck, Banknote, Shield, Clock, Calculator } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import motorcycle1 from "@/assets/motorcycle-1.png";
 import motorcycle2 from "@/assets/motorcycle-2.png";
 import motorcycle3 from "@/assets/motorcycle-3.png";
@@ -11,71 +14,31 @@ import motorcycle4 from "@/assets/motorcycle-4.png";
 import motorcycle5 from "@/assets/motorcycle-5.png";
 import motorcycle6 from "@/assets/motorcycle-6.png";
 
-const motorcycles = [
-  {
-    name: "Bajaj Boxer",
-    brand: "Bajaj",
-    image: motorcycle1,
-    price: "9,000,000",
-    downPayment: "1,800,000",
-    monthlyPayment: "400,000",
-    features: ["Fuel efficient", "Durable engine", "Easy maintenance", "2-year warranty"],
-  },
-  {
-    name: "Bajaj CT",
-    brand: "Bajaj",
-    image: motorcycle3,
-    price: "20,000,000",
-    downPayment: "4,000,000",
-    monthlyPayment: "888,000",
-    features: ["Powerful performance", "Digital display", "Disc brakes", "2-year warranty"],
-  },
-  {
-    name: "Haojue Xpress",
-    brand: "Haojue",
-    image: motorcycle5,
-    price: "6,000,000",
-    downPayment: "1,200,000",
-    monthlyPayment: "266,000",
-    features: ["Compact design", "Low fuel consumption", "Reliable", "2-year warranty"],
-  },
-  {
-    name: "ZongZhen",
-    brand: "ZongZhen",
-    image: motorcycle4,
-    price: "13,000,000",
-    downPayment: "2,600,000",
-    monthlyPayment: "577,000",
-    features: ["Sporty design", "High power", "Comfortable ride", "2-year warranty"],
-  },
-  {
-    name: "Evakuga",
-    brand: "Evakuga",
-    image: motorcycle2,
-    price: "8,000,000",
-    downPayment: "1,600,000",
-    monthlyPayment: "355,000",
-    features: ["Modern styling", "Efficient engine", "Low maintenance", "2-year warranty"],
-  },
-  {
-    name: "Haojue Xpress Plus",
-    brand: "Haojue",
-    image: motorcycle6,
-    price: "12,500,000",
-    downPayment: "2,500,000",
-    monthlyPayment: "555,000",
-    features: ["Enhanced features", "Better mileage", "Premium build", "2-year warranty"],
-  },
-  {
-    name: "Haojue TR300",
-    brand: "Haojue",
-    image: motorcycle1,
-    price: "15,000,000",
-    downPayment: "3,000,000",
-    monthlyPayment: "666,000",
-    features: ["Heavy duty", "Long range", "Commercial grade", "2-year warranty"],
-  },
-];
+// Fallback images mapping
+const fallbackImages: Record<string, string> = {
+  "Bajaj Boxer": motorcycle1,
+  "Bajaj CT": motorcycle3,
+  "Haojue Xpress": motorcycle5,
+  "ZongZhen": motorcycle4,
+  "Evakuga": motorcycle2,
+  "Haojue Xpress Plus": motorcycle6,
+  "Haojue TR300": motorcycle1,
+};
+
+interface Product {
+  id: string;
+  name: string;
+  brand: string;
+  model: string;
+  description: string | null;
+  asset_type: string;
+  price: number;
+  down_payment_percent: number;
+  image_url: string | null;
+  features: string[];
+  is_featured: boolean;
+  display_order: number;
+}
 
 const financingFeatures = [
   {
@@ -101,6 +64,50 @@ const financingFeatures = [
 ];
 
 const Products = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchApprovedProducts();
+  }, []);
+
+  const fetchApprovedProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("product_catalog")
+        .select("*")
+        .eq("status", "approved")
+        .is("deleted_at", null)
+        .order("display_order", { ascending: true });
+
+      if (error) throw error;
+      setProducts((data || []) as Product[]);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getProductImage = (product: Product) => {
+    if (product.image_url) return product.image_url;
+    return fallbackImages[product.name] || motorcycle1;
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-UG", {
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const calculateMonthlyPayment = (price: number, downPaymentPercent: number) => {
+    const downPayment = price * (downPaymentPercent / 100);
+    const remaining = price - downPayment;
+    const interestRate = 0.30; // 30% interest
+    const totalWithInterest = remaining * (1 + interestRate);
+    return Math.round(totalWithInterest / 18); // 18 months
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -127,10 +134,10 @@ const Products = () => {
                     <Bike className="w-8 h-8 text-primary" />
                   </div>
                   <CardTitle>Motorcycles</CardTitle>
-                  <CardDescription>
+                  <p className="text-muted-foreground text-sm mt-2">
                     Premium brands including Bajaj, Haojue, Honda, and more. Perfect for boda boda 
                     business or personal transportation.
-                  </CardDescription>
+                  </p>
                 </CardHeader>
               </Card>
               <Card className="text-center hover:shadow-elegant transition-shadow">
@@ -139,10 +146,10 @@ const Products = () => {
                     <Truck className="w-8 h-8 text-accent" />
                   </div>
                   <CardTitle>Tricycles</CardTitle>
-                  <CardDescription>
+                  <p className="text-muted-foreground text-sm mt-2">
                     Three-wheelers for cargo and passenger transport. Ideal for logistics 
                     businesses and commercial operations.
-                  </CardDescription>
+                  </p>
                 </CardHeader>
               </Card>
             </div>
@@ -159,54 +166,95 @@ const Products = () => {
                 financing terms with 20% down payment and 18-month repayment period.
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {motorcycles.map((product, index) => (
-                <Card key={index} className="overflow-hidden hover:shadow-elegant transition-shadow">
-                  <div className="aspect-video bg-muted relative overflow-hidden">
-                    <img 
-                      src={product.image} 
-                      alt={product.name}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-3 left-3 px-2 py-1 bg-primary text-primary-foreground text-xs font-medium rounded">
-                      {product.brand}
-                    </div>
-                  </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle>{product.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between py-2 border-b">
-                          <span className="text-muted-foreground">Cash Price:</span>
-                          <span className="font-semibold">UGX {product.price}</span>
-                        </div>
-                        <div className="flex justify-between py-2 border-b">
-                          <span className="text-muted-foreground">Down Payment (20%):</span>
-                          <span className="font-semibold text-primary">UGX {product.downPayment}</span>
-                        </div>
-                        <div className="flex justify-between py-2">
-                          <span className="text-muted-foreground">Monthly (18 months):</span>
-                          <span className="font-semibold text-accent">UGX {product.monthlyPayment}</span>
-                        </div>
+
+            {loading ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[...Array(6)].map((_, i) => (
+                  <Card key={i} className="overflow-hidden">
+                    <Skeleton className="aspect-video" />
+                    <CardHeader className="pb-2">
+                      <Skeleton className="h-6 w-32" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
                       </div>
-                      <div className="space-y-2 pt-2">
-                        {product.features.map((feature, i) => (
-                          <div key={i} className="flex items-center gap-2 text-sm">
-                            <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                            <span>{feature}</span>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : products.length === 0 ? (
+              <div className="text-center py-12">
+                <Bike className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No Products Available</h3>
+                <p className="text-muted-foreground">
+                  Check back soon for our latest motorcycle offerings.
+                </p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {products.map((product) => (
+                  <Card key={product.id} className="overflow-hidden hover:shadow-elegant transition-shadow">
+                    <div className="aspect-video bg-muted relative overflow-hidden">
+                      <img 
+                        src={getProductImage(product)} 
+                        alt={product.name}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-3 left-3 px-2 py-1 bg-primary text-primary-foreground text-xs font-medium rounded">
+                        {product.brand}
+                      </div>
+                      {product.is_featured && (
+                        <div className="absolute top-3 right-3 px-2 py-1 bg-accent text-accent-foreground text-xs font-medium rounded">
+                          Featured
+                        </div>
+                      )}
+                    </div>
+                    <CardHeader className="pb-2">
+                      <CardTitle>{product.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">{product.model}</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between py-2 border-b">
+                            <span className="text-muted-foreground">Cash Price:</span>
+                            <span className="font-semibold">UGX {formatCurrency(product.price)}</span>
                           </div>
-                        ))}
+                          <div className="flex justify-between py-2 border-b">
+                            <span className="text-muted-foreground">Down Payment ({product.down_payment_percent}%):</span>
+                            <span className="font-semibold text-primary">
+                              UGX {formatCurrency(product.price * (product.down_payment_percent / 100))}
+                            </span>
+                          </div>
+                          <div className="flex justify-between py-2">
+                            <span className="text-muted-foreground">Monthly (18 months):</span>
+                            <span className="font-semibold text-accent">
+                              UGX {formatCurrency(calculateMonthlyPayment(product.price, product.down_payment_percent))}
+                            </span>
+                          </div>
+                        </div>
+                        {product.features && product.features.length > 0 && (
+                          <div className="space-y-2 pt-2">
+                            {product.features.slice(0, 4).map((feature, i) => (
+                              <div key={i} className="flex items-center gap-2 text-sm">
+                                <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                                <span>{feature}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <Link to="/auth/signup">
+                          <Button className="w-full gradient-accent">Apply Now</Button>
+                        </Link>
                       </div>
-                      <Link to="/auth/signup">
-                        <Button className="w-full gradient-accent">Apply Now</Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 

@@ -32,6 +32,7 @@ import {
   Wifi,
   WifiOff,
   RefreshCw,
+  Package,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import nawapLogo from "@/assets/nawap-logo.png";
@@ -49,6 +50,12 @@ const navItems: NavItem[] = [
     href: "/dashboard",
     icon: <LayoutDashboard className="h-5 w-5" />,
     roles: ["super_admin", "admin", "field_officer", "accountant", "client"],
+  },
+  {
+    label: "Products",
+    href: "/product-management",
+    icon: <Package className="h-5 w-5" />,
+    roles: ["super_admin", "admin", "field_officer"],
   },
   {
     label: "Clients",
@@ -90,7 +97,7 @@ const navItems: NavItem[] = [
     label: "Users",
     href: "/users",
     icon: <Shield className="h-5 w-5" />,
-    roles: ["super_admin"],
+    roles: ["super_admin", "admin"],
   },
   {
     label: "Audit Logs",

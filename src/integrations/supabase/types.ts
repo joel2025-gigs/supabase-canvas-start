@@ -512,6 +512,93 @@ export type Database = {
           },
         ]
       }
+      product_catalog: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          asset_type: string
+          brand: string
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          display_order: number | null
+          down_payment_percent: number
+          features: string[] | null
+          id: string
+          image_url: string | null
+          is_featured: boolean | null
+          model: string
+          name: string
+          price: number
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          specifications: Json | null
+          status: Database["public"]["Enums"]["product_status"]
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          asset_type?: string
+          brand: string
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          down_payment_percent?: number
+          features?: string[] | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          model: string
+          name: string
+          price: number
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          specifications?: Json | null
+          status?: Database["public"]["Enums"]["product_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          asset_type?: string
+          brand?: string
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          down_payment_percent?: number
+          features?: string[] | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          model?: string
+          name?: string
+          price?: number
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          specifications?: Json | null
+          status?: Database["public"]["Enums"]["product_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -712,6 +799,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role:
@@ -735,6 +824,7 @@ export type Database = {
         | "recovered"
       payment_method: "mtn_momo" | "airtel_money" | "bank_transfer" | "cash"
       payment_status: "pending" | "confirmed" | "rejected" | "reconciled"
+      product_status: "draft" | "pending_review" | "approved" | "rejected"
       repayment_frequency: "daily" | "weekly"
       sync_status: "pending" | "synced" | "conflict"
     }
@@ -888,6 +978,7 @@ export const Constants = {
       ],
       payment_method: ["mtn_momo", "airtel_money", "bank_transfer", "cash"],
       payment_status: ["pending", "confirmed", "rejected", "reconciled"],
+      product_status: ["draft", "pending_review", "approved", "rejected"],
       repayment_frequency: ["daily", "weekly"],
       sync_status: ["pending", "synced", "conflict"],
     },
