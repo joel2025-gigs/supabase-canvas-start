@@ -34,6 +34,8 @@ interface Product {
   asset_type: string;
   price: number;
   down_payment_percent: number;
+  loan_duration_months: number;
+  interest_rate: number;
   image_url: string | null;
   features: string[];
   is_featured: boolean;
@@ -100,12 +102,129 @@ const Products = () => {
     }).format(amount);
   };
 
-  const calculateMonthlyPayment = (price: number, downPaymentPercent: number) => {
-    const downPayment = price * (downPaymentPercent / 100);
-    const remaining = price - downPayment;
-    const interestRate = 0.30; // 30% interest
+  const calculateMonthlyPayment = (product: Product) => {
+    const downPayment = product.price * (product.down_payment_percent / 100);
+    const remaining = product.price - downPayment;
+    const interestRate = (product.interest_rate || 30) / 100;
     const totalWithInterest = remaining * (1 + interestRate);
-    return Math.round(totalWithInterest / 18); // 18 months
+    const duration = product.loan_duration_months || 18;
+    return Math.round(totalWithInterest / duration);
+  };
+
+  const calculateTotalLoan = (product: Product) => {
+    const downPayment = product.price * (product.down_payment_percent / 100);
+    const remaining = product.price - downPayment;
+    const interestRate = (product.interest_rate || 30) / 100;
+    return Math.round(remaining * (1 + interestRate));
+  };
+
+  // Separate products by type
+  const motorcycles = products.filter(p => p.asset_type === "motorcycle");
+  const tricycles = products.filter(p => p.asset_type === "tricycle");
+
+  const renderProductGrid = (productList: Product[], emptyMessage: string) => {
+    if (loading) {
+      return (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="overflow-hidden">
+              <Skeleton className="aspect-video" />
+              <CardHeader className="pb-2">
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+
+    if (productList.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <Bike className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-xl font-semibold mb-2">{emptyMessage}</h3>
+          <p className="text-muted-foreground">
+            Check back soon for our latest offerings.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {productList.map((product) => (
+          <Card key={product.id} className="overflow-hidden hover:shadow-elegant transition-shadow">
+            <div className="aspect-video bg-muted relative overflow-hidden">
+              <img 
+                src={getProductImage(product)} 
+                alt={product.name}
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              />
+              <div className="absolute top-3 left-3 px-2 py-1 bg-primary text-primary-foreground text-xs font-medium rounded">
+                {product.brand}
+              </div>
+              {product.is_featured && (
+                <div className="absolute top-3 right-3 px-2 py-1 bg-accent text-accent-foreground text-xs font-medium rounded">
+                  Featured
+                </div>
+              )}
+            </div>
+            <CardHeader className="pb-2">
+              <CardTitle>{product.name}</CardTitle>
+              <p className="text-sm text-muted-foreground">{product.model}</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-muted-foreground">Cash Price:</span>
+                    <span className="font-semibold">UGX {formatCurrency(product.price)}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-muted-foreground">Down Payment ({product.down_payment_percent}%):</span>
+                    <span className="font-semibold text-primary">
+                      UGX {formatCurrency(product.price * (product.down_payment_percent / 100))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-muted-foreground">Total Loan ({product.interest_rate || 30}% interest):</span>
+                    <span className="font-semibold">
+                      UGX {formatCurrency(calculateTotalLoan(product))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-muted-foreground">Monthly ({product.loan_duration_months || 18} months):</span>
+                    <span className="font-semibold text-accent">
+                      UGX {formatCurrency(calculateMonthlyPayment(product))}
+                    </span>
+                  </div>
+                </div>
+                {product.features && product.features.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                    {product.features.slice(0, 4).map((feature, i) => (
+                      <div key={i} className="flex items-center gap-2 text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Link to="/get-started">
+                  <Button className="w-full gradient-accent">Apply Now</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -118,7 +237,7 @@ const Products = () => {
           <div className="section-container text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Products</h1>
             <p className="text-lg opacity-90 max-w-2xl mx-auto">
-              Quality motorcycles from trusted brands, available for cash purchase or through 
+              Quality motorcycles and tricycles from trusted brands, available for cash purchase or through 
               our flexible financing program. Start your journey to ownership today.
             </p>
           </div>
@@ -156,115 +275,47 @@ const Products = () => {
           </div>
         </section>
 
-        {/* Motorcycles Grid */}
+        {/* Motorcycles Section */}
         <section className="py-16">
           <div className="section-container">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4">Motorcycle Inventory</h2>
+              <div className="inline-flex items-center gap-2 mb-4">
+                <Bike className="w-8 h-8 text-primary" />
+                <h2 className="text-3xl font-bold">Motorcycles</h2>
+              </div>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Browse our selection of quality motorcycles. All prices shown include our standard 
-                financing terms with 20% down payment and 18-month repayment period.
+                Browse our selection of quality motorcycles. All prices shown include financing terms 
+                with the displayed down payment and repayment period.
               </p>
             </div>
+            {renderProductGrid(motorcycles, "No Motorcycles Available")}
+          </div>
+        </section>
 
-            {loading ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {[...Array(6)].map((_, i) => (
-                  <Card key={i} className="overflow-hidden">
-                    <Skeleton className="aspect-video" />
-                    <CardHeader className="pb-2">
-                      <Skeleton className="h-6 w-32" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+        {/* Tricycles Section */}
+        <section className="py-16 bg-secondary">
+          <div className="section-container">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 mb-4">
+                <Truck className="w-8 h-8 text-accent" />
+                <h2 className="text-3xl font-bold">Tricycles</h2>
               </div>
-            ) : products.length === 0 ? (
-              <div className="text-center py-12">
-                <Bike className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No Products Available</h3>
-                <p className="text-muted-foreground">
-                  Check back soon for our latest motorcycle offerings.
-                </p>
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {products.map((product) => (
-                  <Card key={product.id} className="overflow-hidden hover:shadow-elegant transition-shadow">
-                    <div className="aspect-video bg-muted relative overflow-hidden">
-                      <img 
-                        src={getProductImage(product)} 
-                        alt={product.name}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-3 left-3 px-2 py-1 bg-primary text-primary-foreground text-xs font-medium rounded">
-                        {product.brand}
-                      </div>
-                      {product.is_featured && (
-                        <div className="absolute top-3 right-3 px-2 py-1 bg-accent text-accent-foreground text-xs font-medium rounded">
-                          Featured
-                        </div>
-                      )}
-                    </div>
-                    <CardHeader className="pb-2">
-                      <CardTitle>{product.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">{product.model}</p>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between py-2 border-b">
-                            <span className="text-muted-foreground">Cash Price:</span>
-                            <span className="font-semibold">UGX {formatCurrency(product.price)}</span>
-                          </div>
-                          <div className="flex justify-between py-2 border-b">
-                            <span className="text-muted-foreground">Down Payment ({product.down_payment_percent}%):</span>
-                            <span className="font-semibold text-primary">
-                              UGX {formatCurrency(product.price * (product.down_payment_percent / 100))}
-                            </span>
-                          </div>
-                          <div className="flex justify-between py-2">
-                            <span className="text-muted-foreground">Monthly (18 months):</span>
-                            <span className="font-semibold text-accent">
-                              UGX {formatCurrency(calculateMonthlyPayment(product.price, product.down_payment_percent))}
-                            </span>
-                          </div>
-                        </div>
-                        {product.features && product.features.length > 0 && (
-                          <div className="space-y-2 pt-2">
-                            {product.features.slice(0, 4).map((feature, i) => (
-                              <div key={i} className="flex items-center gap-2 text-sm">
-                                <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                                <span>{feature}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <Link to="/get-started">
-                          <Button className="w-full gradient-accent">Apply Now</Button>
-                        </Link>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Three-wheelers for cargo and passenger transport. Perfect for logistics 
+                businesses and commercial operations.
+              </p>
+            </div>
+            {renderProductGrid(tricycles, "No Tricycles Available")}
           </div>
         </section>
 
         {/* Financing Section */}
-        <section className="py-16 bg-secondary">
+        <section className="py-16">
           <div className="section-container">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold mb-4">Financing Options</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Can't pay the full amount upfront? Our financing program makes motorcycle ownership 
+                Can't pay the full amount upfront? Our financing program makes ownership 
                 accessible with flexible payment plans tailored to your income.
               </p>
             </div>
@@ -288,19 +339,19 @@ const Products = () => {
                   <ol className="text-left space-y-3 text-muted-foreground">
                     <li className="flex gap-3">
                       <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm flex items-center justify-center flex-shrink-0">1</span>
-                      <span>Choose your motorcycle and apply online or at any branch</span>
+                      <span>Choose your vehicle and apply online or at any branch</span>
                     </li>
                     <li className="flex gap-3">
                       <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm flex items-center justify-center flex-shrink-0">2</span>
-                      <span>Submit required documents and pay your down payment (min 20%)</span>
+                      <span>Submit required documents and pay your down payment</span>
                     </li>
                     <li className="flex gap-3">
                       <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm flex items-center justify-center flex-shrink-0">3</span>
-                      <span>Receive your motorcycle and start your daily/weekly payments</span>
+                      <span>Receive your vehicle and start your daily/weekly payments</span>
                     </li>
                     <li className="flex gap-3">
                       <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm flex items-center justify-center flex-shrink-0">4</span>
-                      <span>Complete all payments and own your motorcycle outright</span>
+                      <span>Complete all payments and own your vehicle outright</span>
                     </li>
                   </ol>
                 </CardContent>
@@ -310,7 +361,7 @@ const Products = () => {
         </section>
 
         {/* Distribution Section */}
-        <section className="py-16">
+        <section className="py-16 bg-muted/50">
           <div className="section-container">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
@@ -325,7 +376,7 @@ const Products = () => {
                   </p>
                   <ul className="space-y-3 mt-4">
                     {[
-                      "Genuine manufacturer warranties on all motorcycles",
+                      "Genuine manufacturer warranties on all vehicles",
                       "Spare parts availability and after-sales support",
                       "Bulk pricing for fleet purchases",
                       "Nationwide delivery to all districts",
@@ -367,7 +418,7 @@ const Products = () => {
         {/* CTA */}
         <section className="py-16 bg-primary text-primary-foreground">
           <div className="section-container text-center">
-            <h2 className="text-3xl font-bold mb-4">Ready to Own Your Motorcycle?</h2>
+            <h2 className="text-3xl font-bold mb-4">Ready to Own Your Vehicle?</h2>
             <p className="text-lg opacity-90 mb-8 max-w-xl mx-auto">
               Visit any of our branches or apply online. Our team will guide you through the process.
             </p>
