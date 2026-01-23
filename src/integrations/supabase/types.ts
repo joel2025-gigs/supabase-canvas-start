@@ -584,7 +584,9 @@ export type Database = {
           features: string[] | null
           id: string
           image_url: string | null
+          interest_rate: number | null
           is_featured: boolean | null
+          loan_duration_months: number | null
           model: string
           name: string
           price: number
@@ -612,7 +614,9 @@ export type Database = {
           features?: string[] | null
           id?: string
           image_url?: string | null
+          interest_rate?: number | null
           is_featured?: boolean | null
+          loan_duration_months?: number | null
           model: string
           name: string
           price: number
@@ -640,7 +644,9 @@ export type Database = {
           features?: string[] | null
           id?: string
           image_url?: string | null
+          interest_rate?: number | null
           is_featured?: boolean | null
+          loan_duration_months?: number | null
           model?: string
           name?: string
           price?: number

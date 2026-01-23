@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -52,7 +52,8 @@ import {
   Clock,
   AlertCircle,
   Send,
-  Package
+  Package,
+  Calculator
 } from "lucide-react";
 
 type ProductStatus = "draft" | "pending_review" | "approved" | "rejected";
@@ -66,6 +67,8 @@ interface Product {
   asset_type: string;
   price: number;
   down_payment_percent: number;
+  loan_duration_months: number;
+  interest_rate: number;
   image_url: string | null;
   features: string[];
   status: ProductStatus;
@@ -108,11 +111,35 @@ const ProductManagement = () => {
     asset_type: "motorcycle",
     price: "",
     down_payment_percent: "20",
+    loan_duration_months: "18",
+    interest_rate: "30",
     image_url: "",
     features: "",
     is_featured: false,
     display_order: "0",
   });
+
+  // Calculate loan details
+  const loanCalculation = useMemo(() => {
+    const price = parseFloat(formData.price) || 0;
+    const downPaymentPercent = parseFloat(formData.down_payment_percent) || 0;
+    const interestRate = parseFloat(formData.interest_rate) || 0;
+    const duration = parseInt(formData.loan_duration_months) || 1;
+
+    const downPayment = price * (downPaymentPercent / 100);
+    const loanAmount = price - downPayment;
+    const interestAmount = loanAmount * (interestRate / 100);
+    const totalLoan = loanAmount + interestAmount;
+    const monthlyPayment = totalLoan / duration;
+
+    return {
+      downPayment,
+      loanAmount,
+      interestAmount,
+      totalLoan,
+      monthlyPayment,
+    };
+  }, [formData.price, formData.down_payment_percent, formData.interest_rate, formData.loan_duration_months]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -153,6 +180,8 @@ const ProductManagement = () => {
       asset_type: "motorcycle",
       price: "",
       down_payment_percent: "20",
+      loan_duration_months: "18",
+      interest_rate: "30",
       image_url: "",
       features: "",
       is_featured: false,
@@ -170,6 +199,8 @@ const ProductManagement = () => {
       asset_type: product.asset_type,
       price: product.price.toString(),
       down_payment_percent: product.down_payment_percent.toString(),
+      loan_duration_months: (product.loan_duration_months || 18).toString(),
+      interest_rate: (product.interest_rate || 30).toString(),
       image_url: product.image_url || "",
       features: product.features.join(", "),
       is_featured: product.is_featured,
@@ -196,6 +227,8 @@ const ProductManagement = () => {
         asset_type: formData.asset_type,
         price: parseFloat(formData.price),
         down_payment_percent: parseFloat(formData.down_payment_percent),
+        loan_duration_months: parseInt(formData.loan_duration_months),
+        interest_rate: parseFloat(formData.interest_rate),
         image_url: formData.image_url || null,
         features: formData.features.split(",").map((f) => f.trim()).filter(Boolean),
         is_featured: formData.is_featured,
@@ -454,16 +487,20 @@ const ProductManagement = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Product</TableHead>
-                    <TableHead>Brand</TableHead>
-                    <TableHead>Price</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Cash Price</TableHead>
+                    <TableHead>Loan Terms</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.map((product) => {
                     const StatusIcon = statusConfig[product.status].icon;
+                    const downPayment = product.price * (product.down_payment_percent / 100);
+                    const loanAmount = product.price - downPayment;
+                    const totalLoan = loanAmount * (1 + (product.interest_rate || 30) / 100);
+                    
                     return (
                       <TableRow key={product.id}>
                         <TableCell>
@@ -481,20 +518,29 @@ const ProductManagement = () => {
                             )}
                             <div>
                               <p className="font-medium">{product.name}</p>
-                              <p className="text-sm text-muted-foreground">{product.model}</p>
+                              <p className="text-sm text-muted-foreground">{product.brand} - {product.model}</p>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>{product.brand}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {product.asset_type}
+                          </Badge>
+                        </TableCell>
                         <TableCell>{formatCurrency(product.price)}</TableCell>
+                        <TableCell>
+                          <div className="text-sm space-y-1">
+                            <p><span className="text-muted-foreground">Down:</span> {product.down_payment_percent}%</p>
+                            <p><span className="text-muted-foreground">Rate:</span> {product.interest_rate || 30}%</p>
+                            <p><span className="text-muted-foreground">Duration:</span> {product.loan_duration_months || 18}mo</p>
+                            <p className="font-medium text-primary">Total: {formatCurrency(totalLoan)}</p>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge className={statusConfig[product.status].color}>
                             <StatusIcon className="h-3 w-3 mr-1" />
                             {statusConfig[product.status].label}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(product.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -564,138 +610,216 @@ const ProductManagement = () => {
           setDialogOpen(open);
           if (!open) resetForm();
         }}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
               <DialogDescription>
                 {editingProduct ? "Update product details" : "Create a new product. It will be saved as a draft."}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Product Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Bajaj Boxer"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="brand">Brand *</Label>
-                  <Input
-                    id="brand"
-                    value={formData.brand}
-                    onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                    placeholder="e.g. Bajaj"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="model">Model *</Label>
-                  <Input
-                    id="model"
-                    value={formData.model}
-                    onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                    placeholder="e.g. Boxer 150cc"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset_type">Asset Type</Label>
-                  <Select
-                    value={formData.asset_type}
-                    onValueChange={(v) => setFormData({ ...formData, asset_type: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="motorcycle">Motorcycle</SelectItem>
-                      <SelectItem value="tricycle">Tricycle</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price (UGX) *</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="e.g. 9000000"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="down_payment">Down Payment (%)</Label>
-                  <Input
-                    id="down_payment"
-                    type="number"
-                    value={formData.down_payment_percent}
-                    onChange={(e) => setFormData({ ...formData, down_payment_percent: e.target.value })}
-                    min="0"
-                    max="100"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="image_url">Image URL</Label>
-                <Input
-                  id="image_url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Product description..."
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="features">Features (comma-separated)</Label>
-                <Input
-                  id="features"
-                  value={formData.features}
-                  onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                  placeholder="Fuel efficient, Durable engine, 2-year warranty"
-                />
-              </div>
-              {isAdmin() && (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Basic Info */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-foreground">Basic Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="display_order">Display Order</Label>
+                    <Label htmlFor="name">Product Name *</Label>
                     <Input
-                      id="display_order"
-                      type="number"
-                      value={formData.display_order}
-                      onChange={(e) => setFormData({ ...formData, display_order: e.target.value })}
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="e.g. Bajaj Boxer"
+                      required
                     />
                   </div>
-                  <div className="flex items-center space-x-2 pt-8">
-                    <input
-                      type="checkbox"
-                      id="is_featured"
-                      checked={formData.is_featured}
-                      onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
-                      className="h-4 w-4"
+                  <div className="space-y-2">
+                    <Label htmlFor="brand">Brand *</Label>
+                    <Input
+                      id="brand"
+                      value={formData.brand}
+                      onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                      placeholder="e.g. Bajaj"
+                      required
                     />
-                    <Label htmlFor="is_featured">Featured Product</Label>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="model">Model *</Label>
+                    <Input
+                      id="model"
+                      value={formData.model}
+                      onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                      placeholder="e.g. Boxer 150cc"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="asset_type">Asset Type</Label>
+                    <Select
+                      value={formData.asset_type}
+                      onValueChange={(v) => setFormData({ ...formData, asset_type: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="motorcycle">Motorcycle</SelectItem>
+                        <SelectItem value="tricycle">Tricycle</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pricing & Loan Terms */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-foreground">Pricing & Loan Terms</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Cash Price (UGX) *</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      placeholder="e.g. 9000000"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="down_payment">Down Payment (%)</Label>
+                    <Input
+                      id="down_payment"
+                      type="number"
+                      value={formData.down_payment_percent}
+                      onChange={(e) => setFormData({ ...formData, down_payment_percent: e.target.value })}
+                      min="0"
+                      max="100"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="loan_duration">Loan Duration (Months)</Label>
+                    <Input
+                      id="loan_duration"
+                      type="number"
+                      value={formData.loan_duration_months}
+                      onChange={(e) => setFormData({ ...formData, loan_duration_months: e.target.value })}
+                      min="1"
+                      max="36"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="interest_rate">Interest Rate (%)</Label>
+                    <Input
+                      id="interest_rate"
+                      type="number"
+                      value={formData.interest_rate}
+                      onChange={(e) => setFormData({ ...formData, interest_rate: e.target.value })}
+                      min="0"
+                      max="100"
+                    />
+                  </div>
+                </div>
+
+                {/* Loan Calculation Preview */}
+                {parseFloat(formData.price) > 0 && (
+                  <Card className="bg-muted/50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Calculator className="h-4 w-4 text-primary" />
+                        <span className="font-medium">Loan Calculation Preview</span>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Down Payment</p>
+                          <p className="font-semibold">{formatCurrency(loanCalculation.downPayment)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Loan Amount</p>
+                          <p className="font-semibold">{formatCurrency(loanCalculation.loanAmount)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Interest</p>
+                          <p className="font-semibold">{formatCurrency(loanCalculation.interestAmount)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Total Loan</p>
+                          <p className="font-semibold text-primary">{formatCurrency(loanCalculation.totalLoan)}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-3 border-t">
+                        <p className="text-muted-foreground text-sm">Monthly Payment</p>
+                        <p className="text-xl font-bold text-accent">{formatCurrency(loanCalculation.monthlyPayment)}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
+              {/* Additional Details */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-foreground">Additional Details</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="image_url">Image URL</Label>
+                  <Input
+                    id="image_url"
+                    value={formData.image_url}
+                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Product description..."
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="features">Features (comma-separated)</Label>
+                  <Input
+                    id="features"
+                    value={formData.features}
+                    onChange={(e) => setFormData({ ...formData, features: e.target.value })}
+                    placeholder="Fuel efficient, Durable engine, 2-year warranty"
+                  />
+                </div>
+              </div>
+
+              {/* Admin Options */}
+              {isAdmin() && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-foreground">Admin Options</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="display_order">Display Order</Label>
+                      <Input
+                        id="display_order"
+                        type="number"
+                        value={formData.display_order}
+                        onChange={(e) => setFormData({ ...formData, display_order: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2 pt-8">
+                      <input
+                        type="checkbox"
+                        id="is_featured"
+                        checked={formData.is_featured}
+                        onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="is_featured">Featured Product</Label>
+                    </div>
                   </div>
                 </div>
               )}
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancel
@@ -719,14 +843,18 @@ const ProductManagement = () => {
             </DialogHeader>
             {selectedProduct && (
               <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg">
+                <div className="p-4 bg-muted rounded-lg space-y-2">
                   <h4 className="font-semibold">{selectedProduct.name}</h4>
                   <p className="text-sm text-muted-foreground">
                     {selectedProduct.brand} - {selectedProduct.model}
                   </p>
-                  <p className="text-lg font-bold text-primary mt-2">
-                    {formatCurrency(selectedProduct.price)}
-                  </p>
+                  <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                    <p><span className="text-muted-foreground">Price:</span> {formatCurrency(selectedProduct.price)}</p>
+                    <p><span className="text-muted-foreground">Type:</span> {selectedProduct.asset_type}</p>
+                    <p><span className="text-muted-foreground">Down:</span> {selectedProduct.down_payment_percent}%</p>
+                    <p><span className="text-muted-foreground">Rate:</span> {selectedProduct.interest_rate || 30}%</p>
+                    <p><span className="text-muted-foreground">Duration:</span> {selectedProduct.loan_duration_months || 18} months</p>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Rejection Reason (required if rejecting)</Label>
