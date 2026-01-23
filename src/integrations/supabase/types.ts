@@ -345,6 +345,51 @@ export type Database = {
         }
         Relationships: []
       }
+      job_postings: {
+        Row: {
+          application_deadline: string
+          created_at: string | null
+          created_by: string | null
+          department: string
+          description: string
+          id: string
+          is_active: boolean | null
+          location: string
+          requirements: string[] | null
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          application_deadline: string
+          created_at?: string | null
+          created_by?: string | null
+          department: string
+          description: string
+          id?: string
+          is_active?: boolean | null
+          location: string
+          requirements?: string[] | null
+          title: string
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          application_deadline?: string
+          created_at?: string | null
+          created_by?: string | null
+          department?: string
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          location?: string
+          requirements?: string[] | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       loans: {
         Row: {
           approved_at: string | null

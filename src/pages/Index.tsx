@@ -179,31 +179,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 lg:py-24 bg-primary text-primary-foreground">
-        <div className="section-container text-center space-y-6">
-          <h2 className="text-3xl lg:text-4xl font-bold">
-            Ready to Start Your Journey?
-          </h2>
-          <p className="text-lg opacity-90 max-w-2xl mx-auto">
-            Whether you're looking to purchase a motorcycle or explore financing options, 
-            we're here to help you take the first step toward ownership.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Link to="/get-started">
-              <Button size="lg" variant="secondary" className="text-lg px-8">
-                Get Started Today
-              </Button>
-            </Link>
-            <Link to="/contact">
-              <Button size="lg" variant="secondary" className="text-lg px-8">
-                Contact Our Team
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
       <Footer />
     </div>
   );
