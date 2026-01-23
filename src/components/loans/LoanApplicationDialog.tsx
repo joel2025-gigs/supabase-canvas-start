@@ -25,7 +25,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
 import type { InquiryWithDetails } from "./InquiryCard";
-import type { Asset, Branch } from "@/lib/types";
+import type { Branch } from "@/lib/types";
+
+interface ProductCatalogItem {
+  id: string;
+  name: string;
+  brand: string;
+  model: string;
+  price: number;
+  asset_type: string;
+  down_payment_percent: number;
+  interest_rate: number | null;
+  loan_duration_months: number | null;
+  image_url: string | null;
+}
 
 const applicationSchema = z.object({
   // KYC - Personal
@@ -71,9 +84,9 @@ export const LoanApplicationDialog = ({
   userId,
   userBranchId,
 }: LoanApplicationDialogProps) => {
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [products, setProducts] = useState<ProductCatalogItem[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductCatalogItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState("personal");
@@ -129,7 +142,7 @@ export const LoanApplicationDialog = ({
 
   useEffect(() => {
     if (open) {
-      fetchAssets();
+      fetchProducts();
       fetchBranches();
     }
   }, [open]);
@@ -150,14 +163,14 @@ export const LoanApplicationDialog = ({
     }
   }, [inquiry]);
 
-  const fetchAssets = async () => {
+  const fetchProducts = async () => {
     const { data } = await supabase
-      .from("assets")
-      .select("*")
-      .eq("status", "available")
+      .from("product_catalog")
+      .select("id, name, brand, model, price, asset_type, down_payment_percent, interest_rate, loan_duration_months, image_url")
+      .eq("status", "approved")
       .is("deleted_at", null)
       .order("brand", { ascending: true });
-    setAssets((data as Asset[]) || []);
+    setProducts(data || []);
   };
 
   const fetchBranches = async () => {
@@ -169,21 +182,23 @@ export const LoanApplicationDialog = ({
     setBranches(data || []);
   };
 
-  const handleAssetSelect = (assetId: string) => {
-    const asset = assets.find((a) => a.id === assetId);
-    setSelectedAsset(asset || null);
-    setFormData((prev) => ({ ...prev, asset_id: assetId }));
+  const handleProductSelect = (productId: string) => {
+    const product = products.find((p) => p.id === productId);
+    setSelectedProduct(product || null);
+    setFormData((prev) => ({ ...prev, asset_id: productId }));
   };
 
   const calculateLoan = () => {
-    if (!selectedAsset) return null;
-    const principal = selectedAsset.selling_price;
+    if (!selectedProduct) return null;
+    const principal = selectedProduct.price;
     const downPayment = Number(formData.down_payment) || 0;
     const loanAmount = principal - downPayment;
-    const interestAmount = loanAmount * (INTEREST_RATE / 100);
+    const productInterestRate = selectedProduct.interest_rate || INTEREST_RATE;
+    const interestAmount = loanAmount * (productInterestRate / 100);
     const totalAmount = loanAmount + interestAmount;
     const frequency = REPAYMENT_FREQUENCIES[formData.repayment_frequency];
-    const durationDays = 365; // 1 year default
+    const durationMonths = selectedProduct.loan_duration_months || 12;
+    const durationDays = durationMonths * 30;
     const totalInstallments = Math.ceil(durationDays / frequency.daysPerPeriod);
     const installmentAmount = Math.ceil(totalAmount / totalInstallments);
 
@@ -243,8 +258,8 @@ export const LoanApplicationDialog = ({
     }
 
     const calculation = calculateLoan();
-    if (!calculation) {
-      toast.error("Please select an asset");
+    if (!calculation || !selectedProduct) {
+      toast.error("Please select a product");
       return;
     }
 
@@ -257,7 +272,27 @@ export const LoanApplicationDialog = ({
         return;
       }
 
-      // 1. Create client record
+      // 1. Create asset from selected product
+      const { data: assetData, error: assetError } = await supabase
+        .from("assets")
+        .insert({
+          asset_type: selectedProduct.asset_type,
+          brand: selectedProduct.brand,
+          model: selectedProduct.model,
+          chassis_number: `PENDING-${Date.now()}`, // Placeholder until actual chassis is registered
+          purchase_price: selectedProduct.price,
+          selling_price: selectedProduct.price,
+          status: "assigned",
+          branch_id: branchId,
+          registered_by: userId,
+          notes: `Created from product catalog: ${selectedProduct.name}`,
+        })
+        .select()
+        .single();
+
+      if (assetError) throw assetError;
+
+      // 2. Create client record
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
         .insert({
@@ -272,7 +307,7 @@ export const LoanApplicationDialog = ({
           next_of_kin_phone: formData.next_of_kin_phone,
           occupation: formData.occupation,
           monthly_income: Number(formData.monthly_income),
-          asset_id: formData.asset_id,
+          asset_id: assetData.id,
           branch_id: branchId,
           registered_by: userId,
         })
@@ -281,14 +316,6 @@ export const LoanApplicationDialog = ({
 
       if (clientError) throw clientError;
 
-      // 2. Update asset status to assigned
-      const { error: assetError } = await supabase
-        .from("assets")
-        .update({ status: "assigned" })
-        .eq("id", formData.asset_id);
-
-      if (assetError) throw assetError;
-
       // 3. Generate loan number and create loan
       const { data: loanNumberData, error: loanNumberError } = await supabase.rpc(
         "generate_loan_number"
@@ -296,16 +323,19 @@ export const LoanApplicationDialog = ({
       if (loanNumberError) throw loanNumberError;
 
       const startDate = new Date();
+      const durationMonths = selectedProduct.loan_duration_months || 12;
       const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 365);
+      endDate.setDate(endDate.getDate() + durationMonths * 30);
+
+      const productInterestRate = selectedProduct.interest_rate || INTEREST_RATE;
 
       const { error: loanError } = await supabase.from("loans").insert({
         loan_number: loanNumberData,
         client_id: clientData.id,
-        asset_id: formData.asset_id,
+        asset_id: assetData.id,
         branch_id: branchId,
         principal_amount: calculation.loanAmount,
-        interest_rate: INTEREST_RATE,
+        interest_rate: productInterestRate,
         total_amount: calculation.totalAmount,
         down_payment: calculation.downPayment,
         loan_balance: calculation.totalAmount,
@@ -654,33 +684,39 @@ export const LoanApplicationDialog = ({
                 </CardHeader>
                 <CardContent className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2 md:col-span-2">
-                    <Label>Select Asset *</Label>
+                    <Label>Select Product *</Label>
                     <Select
                       value={formData.asset_id}
-                      onValueChange={handleAssetSelect}
+                      onValueChange={handleProductSelect}
                     >
                       <SelectTrigger
                         className={formErrors.asset_id ? "border-destructive" : ""}
                       >
-                        <SelectValue placeholder="Choose an available asset" />
+                        <SelectValue placeholder="Choose a product" />
                       </SelectTrigger>
                       <SelectContent>
-                        {assets.map((asset) => (
-                          <SelectItem key={asset.id} value={asset.id}>
-                            <div className="flex items-center gap-2">
-                              <Bike className="h-4 w-4" />
-                              <span>
-                                {asset.brand} {asset.model}
-                              </span>
-                              <span className="text-muted-foreground">
-                                {asset.registration_number || asset.chassis_number}
-                              </span>
-                              <span className="font-medium">
-                                UGX {asset.selling_price.toLocaleString()}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {products.length === 0 ? (
+                          <div className="p-2 text-center text-muted-foreground">
+                            No products available
+                          </div>
+                        ) : (
+                          products.map((product) => (
+                            <SelectItem key={product.id} value={product.id}>
+                              <div className="flex items-center gap-2">
+                                <Bike className="h-4 w-4" />
+                                <span>
+                                  {product.brand} {product.model}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  ({product.asset_type})
+                                </span>
+                                <span className="font-medium">
+                                  UGX {product.price.toLocaleString()}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     {formErrors.asset_id && (
@@ -749,7 +785,7 @@ export const LoanApplicationDialog = ({
                   <CardContent>
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                       <div>
-                        <p className="text-sm text-muted-foreground">Asset Price</p>
+                        <p className="text-sm text-muted-foreground">Product Price</p>
                         <p className="font-semibold">
                           UGX {calculation.principal.toLocaleString()}
                         </p>
@@ -762,7 +798,7 @@ export const LoanApplicationDialog = ({
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">
-                          Loan Amount + Interest ({INTEREST_RATE}%)
+                          Loan Amount + Interest ({selectedProduct?.interest_rate || INTEREST_RATE}%)
                         </p>
                         <p className="font-semibold text-primary">
                           UGX {calculation.totalAmount.toLocaleString()}
