@@ -1,67 +1,40 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, Users, Target, DollarSign } from "lucide-react";
+import { Bike, Shield, Banknote, Users, ArrowRight, CheckCircle2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import motorcycle1 from "@/assets/motorcycle-1.png";
-import motorcycle2 from "@/assets/motorcycle-2.png";
-import motorcycle3 from "@/assets/motorcycle-3.png";
-import motorcycle4 from "@/assets/motorcycle-4.png";
-import motorcycle5 from "@/assets/motorcycle-5.png";
-import motorcycle6 from "@/assets/motorcycle-6.png";
 import heroBackground from "@/assets/motorcycle-2.png";
 
 const Index = () => {
-  const services = [
+  const highlights = [
     {
-      icon: DollarSign,
-      title: "Motorcycle Financing",
-      description: "We provide flexible financing options for clients who cannot afford to purchase motorcycles outright. Our model allows riders to acquire a motorcycle, pay in manageable installments, and eventually own the asset.",
+      icon: Bike,
+      title: "Authorized Distributor",
+      description: "Official distributor of Haojue, Honda, and Bajaj motorcycles in Uganda.",
     },
     {
-      icon: Target,
-      title: "Motorcycle Distribution & Sales",
-      description: "As an authorized distributor of Haujoe and Honda motorcycles, Nawap General Trading offers durable, efficient, and affordable motorcycles for both commercial (boda boda) and personal transportation needs.",
-    },
-  ];
-
-  const products = [
-    { name: "Bajaj Boxer", price: "9,000,000", image: motorcycle1 },
-    { name: "Bajaj CT", price: "20,000,000", image: motorcycle3 },
-    { name: "Haojue Xpress", price: "6,000,000", image: motorcycle5 },
-    { name: "ZongZhen", price: "13,000,000", image: motorcycle4 },
-    { name: "Evakuga", price: "8,000,000", image: motorcycle2 },
-    { name: "Haojue Xpress Plus", price: "12,500,000", image: motorcycle6 },
-    { name: "Haojue TR300", price: "15,000,000", image: motorcycle1 },
-  ];
-
-  const testimonials = [
-    {
-      name: "John",
-      location: "Kampala",
-      role: "Boda Boda Rider",
-      quote: "Through Nawap, I was able to get my first motorcycle. Today, I ride with most of the apps including SafeBoda, Faras and Ride now in Kampala.",
+      icon: Banknote,
+      title: "Flexible Financing",
+      description: "Affordable payment plans that lead to full motorcycle ownership.",
     },
     {
-      name: "Bondo",
-      location: "Luweero",
-      role: "House wife",
-      quote: "My sister advised me to pick a bike from Nawap, because she knew the advantage, as they say the rest are history. Nawap helped us become financially independent.",
+      icon: Shield,
+      title: "Trusted Partner",
+      description: "5+ years serving thousands of clients across Uganda.",
     },
     {
-      name: "Kato",
-      location: "Lugazi",
-      role: "Food Delivery Rider",
-      quote: "My first bike I started riding with Nawap's financing program. Now, I opened a small saloon using the income I earn. Nawap helped me become financially independent.",
+      icon: Users,
+      title: "Community Focus",
+      description: "Empowering riders to build sustainable livelihoods.",
     },
   ];
 
-  const values = [
-    { icon: TrendingUp, title: "Empowering" },
-    { icon: Users, title: "Transforming" },
-    { icon: Target, title: "Unlocking Opportunities" },
-    { icon: DollarSign, title: "Creating Wealth" },
+  const stats = [
+    { value: "5+", label: "Years in Business" },
+    { value: "10+", label: "Branches Nationwide" },
+    { value: "5,000+", label: "Clients Served" },
+    { value: "95%", label: "Repayment Rate" },
   ];
 
   return (
@@ -70,123 +43,138 @@ const Index = () => {
       
       {/* Hero Section */}
       <section 
-        className="relative py-20 lg:py-32 overflow-hidden"
+        className="relative py-24 lg:py-40 overflow-hidden"
         style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.5)), url(${heroBackground})`,
+          backgroundImage: `linear-gradient(to right, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4)), url(${heroBackground})`,
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundPosition: 'center right',
           backgroundRepeat: 'no-repeat'
         }}
       >
         <div className="section-container relative z-10">
-          <div className="max-w-4xl mx-auto text-center space-y-6 animate-fade-in">
-            <h1 className="text-4xl lg:text-6xl font-bold text-white drop-shadow-lg">
-              Nawap General Trading
+          <div className="max-w-2xl space-y-6 animate-fade-in">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/20 border border-accent/30 text-accent text-sm font-medium">
+              <Bike className="w-4 h-4" />
+              Uganda's Trusted Motorcycle Partner
+            </div>
+            <h1 className="text-4xl lg:text-6xl font-bold text-white leading-tight">
+              Bridging the Gap to <span className="text-primary">Motorcycle Ownership</span>
             </h1>
-            <p className="text-2xl lg:text-3xl font-medium text-white italic drop-shadow-md">
-              Bridging the Gap
+            <p className="text-lg text-white/90 leading-relaxed">
+              NAWAP General Trading Ltd provides premium motorcycle distribution and flexible financing 
+              solutions, helping Ugandans access reliable transportation for their livelihoods.
             </p>
-            <p className="text-lg text-white max-w-2xl mx-auto drop-shadow-md">
-              Nawap General Trading Ltd is a Ugandan-based company committed to bridging the financial gap between potential and opportunity. We focus on investing, financing, and educating communities to utilize available resources for sustainable wealth creation.
-            </p>
-            <Link to="/products">
-              <Button size="lg" className="gradient-accent text-lg px-8 shadow-lg hover:shadow-xl transition-shadow">
-                Let's Go!
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <Link to="/auth/signup">
+                <Button size="lg" className="gradient-accent text-lg px-8 shadow-lg hover:shadow-xl transition-all w-full sm:w-auto">
+                  Get Started
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
+              <Link to="/products">
+                <Button size="lg" variant="outline" className="text-lg px-8 border-white/30 text-white hover:bg-white/10 w-full sm:w-auto">
+                  View Products
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Services Section */}
-      <section className="py-16 lg:py-24 bg-background">
-        <div className="section-container">
-          <h2 className="text-3xl lg:text-4xl font-bold text-center mb-12 text-primary">
-            Our Services
-          </h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            {services.map((service, index) => (
-              <Card key={index} className="shadow-card hover:shadow-elegant transition-shadow">
-                <CardContent className="p-6 space-y-4">
-                  <service.icon className="w-12 h-12 text-accent" />
-                  <h3 className="text-2xl font-semibold text-primary">{service.title}</h3>
-                  <p className="text-muted-foreground">{service.description}</p>
-                  <Link to="/products">
-                    <Button variant="outline" className="mt-4">Learn More</Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Products Showcase */}
-      <section className="py-16 lg:py-24 bg-secondary">
-        <div className="section-container">
-          <h2 className="text-3xl lg:text-4xl font-bold text-center mb-4 text-primary">
-            What You Will Get
-          </h2>
-          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            We proudly offer a selection of high-quality motorcycles designed for performance, durability, and fuel efficiency.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product, index) => (
-              <Card key={index} className="shadow-card hover:shadow-elegant transition-shadow">
-                <CardContent className="p-0">
-                  <img src={product.image} alt={product.name} className="w-full h-48 object-cover rounded-t-lg" />
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold text-primary mb-2">{product.name}</h3>
-                    <p className="text-2xl font-bold text-primary">UGX {product.price}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <div className="text-center mt-12">
-            <Link to="/products">
-              <Button size="lg" className="gradient-primary">View All Products</Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-16 lg:py-24 bg-background">
-        <div className="section-container">
-          <h2 className="text-3xl lg:text-4xl font-bold text-center mb-4 text-primary">
-            They Talk About Us
-          </h2>
-          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            At Nawap, success is measured by the lives we touch. Many of our clients began with little to no income, but through our motorcycle financing program, they now earn steady incomes and have built better futures for their families.
-          </p>
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="shadow-card">
-                <CardContent className="p-6 space-y-4">
-                  <div className="w-16 h-16 bg-primary-lighter rounded-full mx-auto"></div>
-                  <h4 className="font-semibold text-lg text-center text-primary">
-                    {testimonial.name}, {testimonial.location}
-                  </h4>
-                  <p className="text-sm text-center text-accent">{testimonial.role}</p>
-                  <p className="text-muted-foreground italic text-center">"{testimonial.quote}"</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Values */}
-      <section className="py-16 lg:py-24 bg-secondary">
+      {/* Stats Section */}
+      <section className="py-12 bg-primary">
         <div className="section-container">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {values.map((value, index) => (
-              <div key={index} className="text-center space-y-3">
-                <value.icon className="w-12 h-12 mx-auto text-accent" />
-                <h3 className="font-semibold text-primary">{value.title}</h3>
+            {stats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="text-3xl lg:text-4xl font-bold text-white mb-1">{stat.value}</div>
+                <div className="text-primary-foreground/80 text-sm">{stat.label}</div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Company Overview */}
+      <section className="py-16 lg:py-24 bg-background">
+        <div className="section-container">
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+              Your Partner in <span className="text-primary">Mobility & Finance</span>
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              We combine motorcycle distribution with accessible financing to help riders 
+              transition from renters to proud owners, creating sustainable economic opportunities.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {highlights.map((item, index) => (
+              <Card key={index} className="shadow-card hover:shadow-elegant transition-all hover:-translate-y-1">
+                <CardContent className="p-6 text-center space-y-4">
+                  <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                    <item.icon className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold">{item.title}</h3>
+                  <p className="text-muted-foreground text-sm">{item.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose Us */}
+      <section className="py-16 lg:py-24 bg-secondary">
+        <div className="section-container">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <h2 className="text-3xl lg:text-4xl font-bold">
+                Why Choose <span className="text-primary">NAWAP?</span>
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                We understand the challenges faced by aspiring motorcycle owners. Our solutions 
+                are designed to make ownership accessible, affordable, and sustainable.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  "Official distributor of top motorcycle brands",
+                  "Flexible payment plans from 12-24 months",
+                  "No hidden fees or complicated terms",
+                  "Nationwide branch network for support",
+                  "Path to full ownership, not endless rentals",
+                ].map((item, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link to="/about">
+                <Button variant="outline" className="mt-4">
+                  Learn More About Us
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="text-center p-6">
+                <div className="text-4xl font-bold text-primary mb-2">20%</div>
+                <div className="text-muted-foreground text-sm">Minimum Down Payment</div>
+              </Card>
+              <Card className="text-center p-6">
+                <div className="text-4xl font-bold text-primary mb-2">24</div>
+                <div className="text-muted-foreground text-sm">Max Months to Pay</div>
+              </Card>
+              <Card className="text-center p-6">
+                <div className="text-4xl font-bold text-primary mb-2">7</div>
+                <div className="text-muted-foreground text-sm">Motorcycle Models</div>
+              </Card>
+              <Card className="text-center p-6">
+                <div className="text-4xl font-bold text-primary mb-2">100%</div>
+                <div className="text-muted-foreground text-sm">Ownership at End</div>
+              </Card>
+            </div>
           </div>
         </div>
       </section>
@@ -195,15 +183,21 @@ const Index = () => {
       <section className="py-16 lg:py-24 bg-primary text-primary-foreground">
         <div className="section-container text-center space-y-6">
           <h2 className="text-3xl lg:text-4xl font-bold">
-            Join us today — let's bridge the gap together.
+            Ready to Start Your Journey?
           </h2>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/credit-application">
-              <Button size="lg" variant="secondary">Apply for Financing</Button>
+          <p className="text-lg opacity-90 max-w-2xl mx-auto">
+            Whether you're looking to purchase a motorcycle or explore financing options, 
+            we're here to help you take the first step toward ownership.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            <Link to="/auth/signup">
+              <Button size="lg" variant="secondary" className="text-lg px-8">
+                Get Started Today
+              </Button>
             </Link>
             <Link to="/contact">
-              <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-                Apply for Partnership
+              <Button size="lg" variant="outline" className="text-lg px-8 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+                Contact Our Team
               </Button>
             </Link>
           </div>
