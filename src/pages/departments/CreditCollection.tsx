@@ -600,17 +600,24 @@ const CreditCollection = () => {
                         }
                       />
                     ))}
-                    {/* Under review - can send to operations */}
+                    {/* Under review - approve if asset assigned, otherwise send to operations */}
                     {underReviewLoans.map((loan) => (
                       <LoanCard
                         key={loan.id}
                         loan={loan}
                         actions={
-                          <Button onClick={() => handleSendToOperations(loan.id)}>
-                            <Send className="h-4 w-4 mr-2" />
-                            Send to Operations
-                            <ArrowRight className="h-4 w-4 ml-2" />
-                          </Button>
+                          loan.asset ? (
+                            <Button className="bg-success hover:bg-success/90" onClick={() => handleFinalApproval(loan.id)}>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Approve & Activate
+                            </Button>
+                          ) : (
+                            <Button onClick={() => handleSendToOperations(loan.id)}>
+                              <Send className="h-4 w-4 mr-2" />
+                              Send to Operations
+                              <ArrowRight className="h-4 w-4 ml-2" />
+                            </Button>
+                          )
                         }
                       />
                     ))}
