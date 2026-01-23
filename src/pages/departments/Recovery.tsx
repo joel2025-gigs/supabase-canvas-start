@@ -251,9 +251,9 @@ const Recovery = () => {
 
   const LoanCard = ({ loan, type }: { loan: DefaultedLoan; type: 'at-risk' | 'defaulted' | 'recovered' }) => (
     <div className={`border rounded-lg p-4 ${
-      type === 'at-risk' ? 'border-orange-300 bg-orange-50/50' : 
-      type === 'defaulted' ? 'border-red-300 bg-red-50/50' : 
-      'border-green-300 bg-green-50/50'
+      type === 'at-risk' ? 'border-warning/30 bg-warning/5' : 
+      type === 'defaulted' ? 'border-accent/30 bg-accent/5' : 
+      'border-success/30 bg-success/5'
     }`}>
       <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
         <div className="space-y-2 flex-1">
@@ -263,7 +263,7 @@ const Recovery = () => {
               {loan.consecutive_missed} missed payments
             </Badge>
             {loan.asset?.gps_device_id && (
-              <Badge variant="outline" className="bg-blue-50">
+              <Badge variant="outline" className="bg-info/10 text-info border-info/30">
                 <MapPin className="h-3 w-3 mr-1" />
                 GPS Tracked
               </Badge>
@@ -355,45 +355,45 @@ const Recovery = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-orange-500/10">
-                <Clock className="h-6 w-6 text-orange-500" />
+              <div className="p-3 rounded-lg bg-warning/10">
+                <Clock className="h-6 w-6 text-warning" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">At Risk</p>
-                <p className="text-2xl font-bold">{stats.atRisk}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.atRisk}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-red-500/10">
-                <AlertTriangle className="h-6 w-6 text-red-500" />
+              <div className="p-3 rounded-lg bg-accent/10">
+                <AlertTriangle className="h-6 w-6 text-accent" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Defaulted</p>
-                <p className="text-2xl font-bold">{stats.defaulted}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.defaulted}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-green-500/10">
-                <Shield className="h-6 w-6 text-green-500" />
+              <div className="p-3 rounded-lg bg-success/10">
+                <Shield className="h-6 w-6 text-success" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Recovered</p>
-                <p className="text-2xl font-bold">{stats.recovered}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.recovered}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-destructive/10">
-                <DollarSign className="h-6 w-6 text-destructive" />
+              <div className="p-3 rounded-lg bg-accent/10">
+                <DollarSign className="h-6 w-6 text-accent" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total At Risk</p>
-                <p className="text-xl font-bold">{formatCurrency(stats.totalAtRisk)}</p>
+                <p className="text-xl font-bold text-foreground">{formatCurrency(stats.totalAtRisk)}</p>
               </div>
             </CardContent>
           </Card>
@@ -402,7 +402,7 @@ const Recovery = () => {
         {/* At Risk Loans */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-orange-600">
+            <CardTitle className="flex items-center gap-2 text-warning">
               <Clock className="h-5 w-5" />
               At-Risk Loans (3+ Missed Payments)
             </CardTitle>
@@ -411,7 +411,7 @@ const Recovery = () => {
           <CardContent>
             {atRiskLoans.length === 0 ? (
               <div className="text-center py-8">
-                <Shield className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                <Shield className="h-12 w-12 text-success mx-auto mb-4" />
                 <p className="text-muted-foreground">No at-risk loans. Great job on collections!</p>
               </div>
             ) : (
@@ -427,7 +427,7 @@ const Recovery = () => {
         {/* Defaulted Loans */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600">
+            <CardTitle className="flex items-center gap-2 text-accent">
               <FileWarning className="h-5 w-5" />
               Defaulted Loans - Pending Recovery
             </CardTitle>
@@ -436,7 +436,7 @@ const Recovery = () => {
           <CardContent>
             {defaultedLoans.length === 0 ? (
               <div className="text-center py-8">
-                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                <CheckCircle className="h-12 w-12 text-success mx-auto mb-4" />
                 <p className="text-muted-foreground">No loans in default status.</p>
               </div>
             ) : (
@@ -453,10 +453,10 @@ const Recovery = () => {
         {recoveredLoans.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-600">
-                <Shield className="h-5 w-5" />
-                Recently Recovered
-              </CardTitle>
+            <CardTitle className="flex items-center gap-2 text-success">
+              <Shield className="h-5 w-5" />
+              Recently Recovered
+            </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">

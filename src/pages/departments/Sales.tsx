@@ -107,10 +107,10 @@ const Sales = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new': return 'bg-blue-500';
-      case 'contacted': return 'bg-yellow-500';
-      case 'qualified': return 'bg-purple-500';
-      case 'converted': return 'bg-green-500';
+      case 'new': return 'bg-info';
+      case 'contacted': return 'bg-warning';
+      case 'qualified': return 'bg-primary';
+      case 'converted': return 'bg-success';
       case 'closed': return 'bg-muted';
       default: return 'bg-muted';
     }
@@ -161,40 +161,40 @@ const Sales = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Leads</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-blue-500/10">
-                <Clock className="h-6 w-6 text-blue-500" />
+              <div className="p-3 rounded-lg bg-info/10">
+                <Clock className="h-6 w-6 text-info" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">New Inquiries</p>
-                <p className="text-2xl font-bold">{stats.new}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.new}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-yellow-500/10">
-                <Phone className="h-6 w-6 text-yellow-500" />
+              <div className="p-3 rounded-lg bg-warning/10">
+                <Phone className="h-6 w-6 text-warning" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Contacted</p>
-                <p className="text-2xl font-bold">{stats.contacted}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.contacted}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-green-500/10">
-                <CheckCircle className="h-6 w-6 text-green-500" />
+              <div className="p-3 rounded-lg bg-success/10">
+                <CheckCircle className="h-6 w-6 text-success" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Converted</p>
-                <p className="text-2xl font-bold">{stats.converted}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.converted}</p>
               </div>
             </CardContent>
           </Card>

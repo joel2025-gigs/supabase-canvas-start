@@ -38,7 +38,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
-import nawapLogo from "@/assets/nawap-logo.png";
+import nawapLogo from "@/assets/nawap-logo-white.png";
 
 interface NavItem {
   label: string;
@@ -226,13 +226,13 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       className={cn(
                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                         location.pathname === item.href
-                          ? "bg-primary/10 text-primary border border-primary/30 shadow-glow"
+                          ? "bg-accent/20 text-accent border border-accent/30"
                           : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       )}
                       onClick={() => setSidebarOpen(false)}
                     >
                       <span className={cn(
-                        location.pathname === item.href ? "text-primary" : ""
+                        location.pathname === item.href ? "text-accent" : ""
                       )}>
                         {item.icon}
                       </span>
