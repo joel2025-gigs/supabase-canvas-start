@@ -126,7 +126,7 @@ const Sales = () => {
     );
   }
 
-  if (!hasAnyRole(['super_admin', 'admin', 'field_officer'])) {
+  if (!hasAnyRole(['super_admin', 'admin', 'sales_admin', 'sales_officer'])) {
     return (
       <DashboardLayout>
         <Card>

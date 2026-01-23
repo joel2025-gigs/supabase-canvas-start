@@ -14,14 +14,56 @@ export const REPAYMENT_FREQUENCIES = {
   weekly: { label: "Weekly", daysPerPeriod: 7 },
 } as const;
 
-// User roles with labels
+// User roles with labels - New department-based structure
 export const USER_ROLES = {
   super_admin: { label: "Super Admin", description: "Full system access" },
-  admin: { label: "Admin", description: "Approve loans, manage recovery" },
-  field_officer: { label: "Field Officer", description: "Client onboarding, payments" },
-  accountant: { label: "Accountant", description: "Financial reports, reconciliation" },
-  client: { label: "Client", description: "View-only dashboard" },
+  admin: { label: "Admin", description: "OPERATIONS + LOANS access, no ADMIN section" },
+  operations_admin: { label: "Operations Admin", description: "Edit OPERATIONS, view-only LOANS" },
+  accountant: { label: "Accountant", description: "View-only, can download reports" },
+  sales_admin: { label: "Sales Admin", description: "Manage Sales department" },
+  sales_officer: { label: "Sales Officer", description: "Basic Sales tasks" },
+  credit_admin: { label: "Credit Admin", description: "Final loan approval, manage Credit dept" },
+  credit_officer: { label: "Credit Officer", description: "Create loan applications" },
+  recovery_admin: { label: "Recovery Admin", description: "Manage Recovery department" },
+  recovery_officer: { label: "Recovery Officer", description: "Basic Recovery tasks" },
+  operations_officer: { label: "Operations Officer", description: "Basic Operations tasks" },
+  staff: { label: "Staff", description: "Department-specific access" },
 } as const;
+
+// Department definitions
+export const DEPARTMENTS = {
+  sales: { label: "Sales", description: "Lead management and client acquisition" },
+  credit_collection: { label: "Credit & Collection", description: "Loan processing and payments" },
+  recovery: { label: "Recovery", description: "Default management and asset recovery" },
+  operations: { label: "Operations", description: "Asset and product management" },
+} as const;
+
+// Role to department mapping
+export const ROLE_DEPARTMENT_MAP: Record<string, string> = {
+  sales_admin: 'sales',
+  sales_officer: 'sales',
+  credit_admin: 'credit_collection',
+  credit_officer: 'credit_collection',
+  recovery_admin: 'recovery',
+  recovery_officer: 'recovery',
+  operations_admin: 'operations',
+  operations_officer: 'operations',
+};
+
+// Roles that can approve loans (only super_admin and credit_admin)
+export const LOAN_APPROVAL_ROLES = ['super_admin', 'credit_admin'] as const;
+
+// Roles that can edit operations
+export const OPERATIONS_EDIT_ROLES = ['super_admin', 'admin', 'operations_admin'] as const;
+
+// Roles that can view loans
+export const LOANS_VIEW_ROLES = [
+  'super_admin', 'admin', 'accountant', 'operations_admin',
+  'credit_admin', 'credit_officer', 'recovery_admin', 'recovery_officer'
+] as const;
+
+// Admin section visible roles
+export const ADMIN_SECTION_ROLES = ['super_admin'] as const;
 
 // Loan statuses with labels and colors
 export const LOAN_STATUSES = {

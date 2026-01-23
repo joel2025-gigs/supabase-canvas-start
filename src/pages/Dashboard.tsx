@@ -962,7 +962,8 @@ const Dashboard = () => {
     return <AdminDashboard />;
   }
 
-  if (hasRole('field_officer')) {
+  // Department admins and operations staff get field officer style dashboard
+  if (hasAnyRole(['operations_admin', 'sales_admin', 'credit_admin', 'recovery_admin', 'sales_officer', 'credit_officer', 'recovery_officer', 'operations_officer'])) {
     return <FieldOfficerDashboard />;
   }
 
@@ -970,6 +971,7 @@ const Dashboard = () => {
     return <AccountantDashboard />;
   }
 
+  // Staff and any other roles get client-style dashboard
   return <ClientDashboard />;
 };
 

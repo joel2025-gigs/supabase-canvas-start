@@ -57,8 +57,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Plus, Shield, Loader2, MoreHorizontal, UserPlus, Pencil, Trash2, KeyRound } from "lucide-react";
-import { USER_ROLES } from "@/lib/constants";
-import type { Profile, Branch, AppRole } from "@/lib/types";
+import { USER_ROLES, DEPARTMENTS, ROLE_DEPARTMENT_MAP } from "@/lib/constants";
+import type { Profile, Branch, AppRole, Department } from "@/lib/types";
 import { z } from "zod";
 
 const userSchema = z.object({
@@ -66,15 +66,17 @@ const userSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
   full_name: z.string().min(2, "Name is required"),
   phone: z.string().optional(),
-  role: z.enum(["super_admin", "admin", "field_officer", "accountant", "client"]),
+  role: z.enum(["super_admin", "admin", "operations_admin", "accountant", "sales_admin", "sales_officer", "credit_admin", "credit_officer", "recovery_admin", "recovery_officer", "operations_officer", "staff"]),
   branch_id: z.string().optional(),
+  department: z.string().optional(),
 });
 
 const editUserSchema = z.object({
   full_name: z.string().min(2, "Name is required"),
   phone: z.string().optional(),
-  role: z.enum(["super_admin", "admin", "field_officer", "accountant", "client"]),
+  role: z.enum(["super_admin", "admin", "operations_admin", "accountant", "sales_admin", "sales_officer", "credit_admin", "credit_officer", "recovery_admin", "recovery_officer", "operations_officer", "staff"]),
   branch_id: z.string().optional(),
+  department: z.string().optional(),
   is_active: z.boolean(),
 });
 
@@ -112,15 +114,17 @@ const Users = () => {
     password: "",
     full_name: "",
     phone: "",
-    role: "field_officer" as AppRole,
+    role: "operations_officer" as AppRole,
     branch_id: "",
+    department: "" as string,
   });
 
   const [editFormData, setEditFormData] = useState({
     full_name: "",
     phone: "",
-    role: "field_officer" as AppRole,
+    role: "operations_officer" as AppRole,
     branch_id: "",
+    department: "" as string,
     is_active: true,
   });
 
@@ -189,8 +193,9 @@ const Users = () => {
       password: "",
       full_name: "",
       phone: "",
-      role: "field_officer",
+      role: "operations_officer",
       branch_id: "",
+      department: "",
     });
     setFormErrors({});
   };
@@ -199,8 +204,9 @@ const Users = () => {
     setEditFormData({
       full_name: "",
       phone: "",
-      role: "field_officer",
+      role: "operations_officer",
       branch_id: "",
+      department: "",
       is_active: true,
     });
     setFormErrors({});
@@ -253,24 +259,27 @@ const Users = () => {
 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      if (formData.branch_id) {
+      // Update profile with branch and department
+      const updateData: any = {};
+      if (formData.branch_id) updateData.branch_id = formData.branch_id;
+      if (formData.department) updateData.department = formData.department;
+      
+      if (Object.keys(updateData).length > 0) {
         await supabase
           .from("profiles")
-          .update({ branch_id: formData.branch_id })
+          .update(updateData)
           .eq("id", authData.user.id);
       }
 
-      if (formData.role !== "client") {
-        await supabase
-          .from("user_roles")
-          .delete()
-          .eq("user_id", authData.user.id)
-          .eq("role", "client");
+      // Set the role (remove default 'staff' role first)
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", authData.user.id);
 
-        await supabase
-          .from("user_roles")
-          .insert({ user_id: authData.user.id, role: formData.role, assigned_by: user?.id });
-      }
+      await supabase
+        .from("user_roles")
+        .insert({ user_id: authData.user.id, role: formData.role, assigned_by: user?.id });
 
       toast.success("User created successfully");
       resetForm();
@@ -289,8 +298,9 @@ const Users = () => {
     setEditFormData({
       full_name: userToEdit.full_name,
       phone: userToEdit.phone || "",
-      role: userToEdit.roles[0] || "client",
+      role: userToEdit.roles[0] || "staff",
       branch_id: userToEdit.branch_id || "",
+      department: userToEdit.department || "",
       is_active: userToEdit.is_active,
     });
     setIsEditDialogOpen(true);
@@ -320,14 +330,23 @@ const Users = () => {
 
     try {
       // Update profile
+      const updateData: Record<string, any> = {
+        full_name: editFormData.full_name,
+        phone: editFormData.phone || null,
+        branch_id: editFormData.branch_id || null,
+        is_active: editFormData.is_active,
+      };
+      
+      // Only include department if it's a valid value
+      if (editFormData.department && ['sales', 'credit_collection', 'recovery', 'operations'].includes(editFormData.department)) {
+        updateData.department = editFormData.department;
+      } else {
+        updateData.department = null;
+      }
+      
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({
-          full_name: editFormData.full_name,
-          phone: editFormData.phone || null,
-          branch_id: editFormData.branch_id || null,
-          is_active: editFormData.is_active,
-        })
+        .update(updateData)
         .eq("id", editingUser.id);
 
       if (profileError) throw profileError;
@@ -577,6 +596,23 @@ const Users = () => {
                   </div>
                 )}
 
+                <div className="space-y-2">
+                  <Label>Department</Label>
+                  <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {Object.entries(DEPARTMENTS).map(([key, value]) => (
+                        <SelectItem key={key} value={key}>
+                          {value.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }}>
                     Cancel
@@ -655,6 +691,23 @@ const Users = () => {
                   {formErrors.branch_id && <p className="text-sm text-destructive">{formErrors.branch_id}</p>}
                 </div>
               )}
+
+              <div className="space-y-2">
+                <Label>Department</Label>
+                <Select value={editFormData.department} onValueChange={(v) => setEditFormData({ ...editFormData, department: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {Object.entries(DEPARTMENTS).map(([key, value]) => (
+                      <SelectItem key={key} value={key}>
+                        {value.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="space-y-2">
                 <Label>Status</Label>

@@ -118,7 +118,7 @@ const CreditCollection = () => {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (user && hasAnyRole(['super_admin', 'admin', 'field_officer', 'accountant'])) {
+    if (user && hasAnyRole(['super_admin', 'admin', 'credit_admin', 'credit_officer', 'accountant'])) {
       fetchData();
     }
   }, [user, roles]);
@@ -368,7 +368,7 @@ const CreditCollection = () => {
     );
   }
 
-  if (!hasAnyRole(['super_admin', 'admin', 'field_officer', 'accountant'])) {
+  if (!hasAnyRole(['super_admin', 'admin', 'credit_admin', 'credit_officer', 'accountant'])) {
     return (
       <DashboardLayout>
         <Card>
