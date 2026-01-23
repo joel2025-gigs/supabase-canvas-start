@@ -246,7 +246,7 @@ const Products = () => {
                             ))}
                           </div>
                         )}
-                        <Link to="/auth/signup">
+                        <Link to="/get-started">
                           <Button className="w-full gradient-accent">Apply Now</Button>
                         </Link>
                       </div>
@@ -372,7 +372,7 @@ const Products = () => {
               Visit any of our branches or apply online. Our team will guide you through the process.
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
-              <Link to="/auth/signup">
+              <Link to="/get-started">
                 <Button size="lg" variant="secondary">Apply Online</Button>
               </Link>
               <Link to="/contact">

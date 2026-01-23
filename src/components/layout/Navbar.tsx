@@ -7,7 +7,7 @@ import logo from "@/assets/nawap-logo.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, signOut, isStaff } = useAuth();
 
   const navLinks = [
     { name: "Home", path: "/" },
@@ -53,14 +53,9 @@ const Navbar = () => {
                 </Button>
               </>
             ) : (
-              <>
-                <Link to="/auth/login">
-                  <Button variant="ghost" size="sm">Sign In</Button>
-                </Link>
-                <Link to="/auth/signup">
-                  <Button size="sm" className="gradient-accent">Get Started</Button>
-                </Link>
-              </>
+              <Link to="/get-started">
+                <Button size="sm" className="gradient-accent">Get Started</Button>
+              </Link>
             )}
           </div>
 
@@ -102,14 +97,9 @@ const Navbar = () => {
                   </Button>
                 </>
               ) : (
-                <>
-                  <Link to="/auth/login" onClick={() => setIsOpen(false)}>
-                    <Button variant="outline" className="w-full" size="sm">Sign In</Button>
-                  </Link>
-                  <Link to="/auth/signup" onClick={() => setIsOpen(false)}>
-                    <Button className="w-full gradient-accent" size="sm">Get Started</Button>
-                  </Link>
-                </>
+                <Link to="/get-started" onClick={() => setIsOpen(false)}>
+                  <Button className="w-full gradient-accent" size="sm">Get Started</Button>
+                </Link>
               )}
             </div>
           </div>

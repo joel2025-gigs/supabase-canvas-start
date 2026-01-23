@@ -65,7 +65,7 @@ const Index = () => {
               solutions, helping Ugandans access reliable transportation for their livelihoods.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Link to="/auth/signup">
+              <Link to="/get-started">
                 <Button size="lg" className="gradient-accent text-lg px-8 shadow-lg hover:shadow-xl transition-all w-full sm:w-auto">
                   Get Started
                   <ArrowRight className="w-5 h-5 ml-2" />
@@ -190,7 +190,7 @@ const Index = () => {
             we're here to help you take the first step toward ownership.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Link to="/auth/signup">
+            <Link to="/get-started">
               <Button size="lg" variant="secondary" className="text-lg px-8">
                 Get Started Today
               </Button>
