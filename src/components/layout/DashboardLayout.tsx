@@ -55,27 +55,34 @@ const navItems: NavItem[] = [
     icon: <LayoutDashboard className="h-5 w-5" />,
     roles: ["super_admin", "admin", "field_officer", "accountant", "client"],
   },
-  // Departments
+  // Loans & Departments
+  {
+    label: "All Loans",
+    href: "/loans",
+    icon: <CreditCard className="h-5 w-5" />,
+    roles: ["super_admin", "admin", "field_officer", "accountant"],
+    section: "Loans",
+  },
   {
     label: "Sales",
     href: "/departments/sales",
     icon: <TrendingUp className="h-5 w-5" />,
     roles: ["super_admin", "admin", "field_officer"],
-    section: "Departments",
+    section: "Loans",
   },
   {
     label: "Credit & Collection",
     href: "/departments/credit-collection",
     icon: <Wallet className="h-5 w-5" />,
     roles: ["super_admin", "admin", "field_officer", "accountant"],
-    section: "Departments",
+    section: "Loans",
   },
   {
     label: "Recovery",
     href: "/departments/recovery",
     icon: <AlertTriangle className="h-5 w-5" />,
     roles: ["super_admin", "admin", "field_officer"],
-    section: "Departments",
+    section: "Loans",
   },
   // Operations
   {
@@ -96,13 +103,6 @@ const navItems: NavItem[] = [
     label: "Assets",
     href: "/assets",
     icon: <Bike className="h-5 w-5" />,
-    roles: ["super_admin", "admin", "field_officer", "accountant"],
-    section: "Operations",
-  },
-  {
-    label: "Loans",
-    href: "/loans",
-    icon: <CreditCard className="h-5 w-5" />,
     roles: ["super_admin", "admin", "field_officer", "accountant"],
     section: "Operations",
   },
