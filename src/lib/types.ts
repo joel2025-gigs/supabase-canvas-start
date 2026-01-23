@@ -1,7 +1,7 @@
 // NAWAP Asset Financing System Types
 
 export type AppRole = 'super_admin' | 'admin' | 'field_officer' | 'accountant' | 'client';
-export type LoanStatus = 'pending' | 'approved' | 'active' | 'completed' | 'defaulted' | 'recovered';
+export type LoanStatus = 'pending' | 'under_review' | 'awaiting_asset' | 'awaiting_approval' | 'approved' | 'active' | 'completed' | 'defaulted' | 'recovered';
 export type PaymentStatus = 'pending' | 'confirmed' | 'rejected' | 'reconciled';
 export type PaymentMethod = 'mtn_momo' | 'airtel_money' | 'bank_transfer' | 'cash';
 export type AssetStatus = 'available' | 'assigned' | 'recovered' | 'transferred' | 'maintenance';
