@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -14,31 +12,18 @@ import {
   FileText, 
   Clock, 
   CheckCircle, 
-  Phone,
-  Mail,
-  MapPin
+  Phone
 } from "lucide-react";
-
-interface InquiryWithDetails {
-  id: string;
-  full_name: string;
-  phone: string;
-  email: string | null;
-  district: string | null;
-  occupation: string | null;
-  product_interest: string | null;
-  monthly_income: string | null;
-  message: string | null;
-  status: string;
-  notes: string | null;
-  created_at: string;
-}
+import { InquiryCard, type InquiryWithDetails } from "@/components/loans/InquiryCard";
+import { InquiryEditDialog } from "@/components/loans/InquiryEditDialog";
 
 const Sales = () => {
   const { user, loading: authLoading, isStaff, hasAnyRole, roles } = useAuth();
   const navigate = useNavigate();
   const [inquiries, setInquiries] = useState<InquiryWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingInquiry, setEditingInquiry] = useState<InquiryWithDetails | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     new: 0,
@@ -69,7 +54,6 @@ const Sales = () => {
 
       setInquiries(data || []);
       
-      // Calculate stats
       const total = data?.length || 0;
       const newCount = data?.filter(i => i.status === 'new').length || 0;
       const contacted = data?.filter(i => i.status === 'contacted').length || 0;
@@ -105,14 +89,26 @@ const Sales = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'new': return 'bg-info';
-      case 'contacted': return 'bg-warning';
-      case 'qualified': return 'bg-primary';
-      case 'converted': return 'bg-success';
-      case 'closed': return 'bg-muted';
-      default: return 'bg-muted';
+  const handleEditInquiry = (inquiry: InquiryWithDetails) => {
+    setEditingInquiry(inquiry);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveInquiry = async (id: string, data: Partial<InquiryWithDetails>) => {
+    try {
+      const { error } = await supabase
+        .from("inquiries")
+        .update(data)
+        .eq("id", id);
+
+      if (error) throw error;
+      
+      toast.success("Inquiry updated successfully");
+      fetchInquiries();
+    } catch (error) {
+      console.error("Error updating inquiry:", error);
+      toast.error("Failed to update inquiry");
+      throw error;
     }
   };
 
@@ -217,66 +213,25 @@ const Sales = () => {
             ) : (
               <div className="space-y-4">
                 {inquiries.map((inquiry) => (
-                  <div key={inquiry.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{inquiry.full_name}</h3>
-                          <Badge className={`${getStatusColor(inquiry.status)} text-white`}>
-                            {inquiry.status}
-                          </Badge>
-                        </div>
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Phone className="h-4 w-4" />
-                            {inquiry.phone}
-                          </span>
-                          {inquiry.email && (
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-4 w-4" />
-                              {inquiry.email}
-                            </span>
-                          )}
-                          {inquiry.district && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="h-4 w-4" />
-                              {inquiry.district}
-                            </span>
-                          )}
-                        </div>
-                        {inquiry.product_interest && (
-                          <p className="text-sm">
-                            <span className="font-medium">Interest:</span> {inquiry.product_interest}
-                          </p>
-                        )}
-                        {inquiry.message && (
-                          <p className="text-sm text-muted-foreground line-clamp-2">{inquiry.message}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        {inquiry.status === 'new' && (
-                          <Button size="sm" onClick={() => handleUpdateStatus(inquiry.id, 'contacted')}>
-                            Mark Contacted
-                          </Button>
-                        )}
-                        {inquiry.status === 'contacted' && (
-                          <Button size="sm" onClick={() => handleUpdateStatus(inquiry.id, 'qualified')}>
-                            Mark Qualified
-                          </Button>
-                        )}
-                        {inquiry.status === 'qualified' && (
-                          <Button size="sm" variant="default" onClick={() => handleUpdateStatus(inquiry.id, 'converted')}>
-                            Convert to Client
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <InquiryCard
+                    key={inquiry.id}
+                    inquiry={inquiry}
+                    onEdit={handleEditInquiry}
+                    onUpdateStatus={handleUpdateStatus}
+                  />
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
+
+        {/* Edit Dialog */}
+        <InquiryEditDialog
+          inquiry={editingInquiry}
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          onSave={handleSaveInquiry}
+        />
       </div>
     </DashboardLayout>
   );
