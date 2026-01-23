@@ -216,7 +216,7 @@ const Products = () => {
                     ))}
                   </div>
                 )}
-                <Link to="/get-started">
+                <Link to={`/get-started?product=${encodeURIComponent(product.name)}`}>
                   <Button className="w-full gradient-accent">Apply Now</Button>
                 </Link>
               </div>
@@ -415,25 +415,6 @@ const Products = () => {
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="py-16 bg-primary text-primary-foreground">
-          <div className="section-container text-center">
-            <h2 className="text-3xl font-bold mb-4">Ready to Own Your Vehicle?</h2>
-            <p className="text-lg opacity-90 mb-8 max-w-xl mx-auto">
-              Visit any of our branches or apply online. Our team will guide you through the process.
-            </p>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <Link to="/get-started">
-                <Button size="lg" variant="secondary">Apply Online</Button>
-              </Link>
-              <Link to="/contact">
-                <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10">
-                  Contact Us
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
       </main>
 
       <Footer />

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -33,6 +33,7 @@ const inquirySchema = z.object({
 
 const GetStarted = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -47,6 +48,14 @@ const GetStarted = () => {
     monthly_income: "",
     message: "",
   });
+
+  // Pre-fill product from URL query param
+  useEffect(() => {
+    const product = searchParams.get("product");
+    if (product) {
+      setFormData(prev => ({ ...prev, product_interest: product }));
+    }
+  }, [searchParams]);
 
   const handleChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });

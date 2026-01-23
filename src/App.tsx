@@ -22,6 +22,7 @@ import GetStarted from "./pages/GetStarted";
 import About from "./pages/About";
 import Careers from "./pages/Careers";
 import Contact from "./pages/Contact";
+import Jobs from "./pages/Jobs";
 import NotFound from "./pages/NotFound";
 
 // Department pages
@@ -63,7 +64,7 @@ const App = () => (
           <Route path="/audit-logs" element={<AuditLogs />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/product-management" element={<ProductManagement />} />
-          
+          <Route path="/jobs" element={<Jobs />} />
           {/* Department routes */}
           <Route path="/departments/sales" element={<Sales />} />
           <Route path="/departments/credit-collection" element={<CreditCollection />} />

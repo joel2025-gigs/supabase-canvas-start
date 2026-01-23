@@ -1,41 +1,25 @@
+import { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Clock, Briefcase } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { MapPin, Clock, Briefcase, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { format, formatDistanceToNow } from "date-fns";
 
-const openings = [
-  {
-    title: "Field Officer",
-    department: "Operations",
-    location: "Multiple Locations",
-    type: "Full-time",
-    description: "Manage client relationships, collect payments, and support loan recovery in assigned areas.",
-  },
-  {
-    title: "Branch Manager",
-    department: "Management",
-    location: "Kampala",
-    type: "Full-time",
-    description: "Lead branch operations, manage staff, and ensure targets are met.",
-  },
-  {
-    title: "Accountant",
-    department: "Finance",
-    location: "Head Office",
-    type: "Full-time",
-    description: "Handle financial records, reconciliations, and reporting.",
-  },
-  {
-    title: "Customer Service Representative",
-    department: "Customer Support",
-    location: "Multiple Locations",
-    type: "Full-time",
-    description: "Provide excellent customer service and handle client inquiries.",
-  },
-];
+interface JobPosting {
+  id: string;
+  title: string;
+  department: string;
+  location: string;
+  type: string;
+  description: string;
+  requirements: string[];
+  application_deadline: string;
+}
 
 const benefits = [
   "Competitive salary and commissions",
@@ -47,6 +31,30 @@ const benefits = [
 ];
 
 const Careers = () => {
+  const [jobs, setJobs] = useState<JobPosting[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  const fetchJobs = async () => {
+    try {
+      // This will only return active, non-expired jobs due to RLS
+      const { data, error } = await supabase
+        .from("job_postings")
+        .select("*")
+        .order("application_deadline", { ascending: true });
+
+      if (error) throw error;
+      setJobs(data || []);
+    } catch (error) {
+      console.error("Error fetching jobs:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -100,41 +108,76 @@ const Careers = () => {
         <section className="py-16 bg-muted/50">
           <div className="section-container">
             <h2 className="text-3xl font-bold text-center mb-12">Open Positions</h2>
-            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              {openings.map((job, index) => (
-                <Card key={index}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle>{job.title}</CardTitle>
-                        <CardDescription>{job.department}</CardDescription>
+            
+            {loading ? (
+              <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                {[...Array(4)].map((_, i) => (
+                  <Card key={i}>
+                    <CardHeader>
+                      <Skeleton className="h-6 w-40" />
+                      <Skeleton className="h-4 w-24" />
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-4 w-3/4 mb-4" />
+                      <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : jobs.length === 0 ? (
+              <div className="text-center py-12">
+                <Briefcase className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No Open Positions</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  We don't have any open positions at the moment. Check back soon or send us 
+                  your CV for future opportunities.
+                </p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                {jobs.map((job) => (
+                  <Card key={job.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle>{job.title}</CardTitle>
+                          <CardDescription>{job.department}</CardDescription>
+                        </div>
+                        <Badge variant="secondary">{job.type}</Badge>
                       </div>
-                      <Badge variant="secondary">{job.type}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground text-sm mb-4">{job.description}</p>
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        {job.location}
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground text-sm mb-4">{job.description}</p>
+                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          {job.location}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {job.type}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Briefcase className="w-4 h-4" />
+                          {job.department}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {job.type}
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-4">
+                        <Calendar className="w-3 h-3" />
+                        Apply by {format(new Date(job.application_deadline), "MMM d, yyyy")}
+                        <span className="text-primary ml-1">
+                          ({formatDistanceToNow(new Date(job.application_deadline))} left)
+                        </span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Briefcase className="w-4 h-4" />
-                        {job.department}
-                      </div>
-                    </div>
-                    <Link to="/contact">
-                      <Button variant="outline" className="w-full">Apply Now</Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <Link to="/contact">
+                        <Button variant="outline" className="w-full">Apply Now</Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
