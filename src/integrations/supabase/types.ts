@@ -723,6 +723,7 @@ export type Database = {
           branch_id: string | null
           created_at: string | null
           deleted_at: string | null
+          department: Database["public"]["Enums"]["department"] | null
           district: string | null
           email: string | null
           full_name: string
@@ -738,6 +739,7 @@ export type Database = {
           branch_id?: string | null
           created_at?: string | null
           deleted_at?: string | null
+          department?: Database["public"]["Enums"]["department"] | null
           district?: string | null
           email?: string | null
           full_name: string
@@ -753,6 +755,7 @@ export type Database = {
           branch_id?: string | null
           created_at?: string | null
           deleted_at?: string | null
+          department?: Database["public"]["Enums"]["department"] | null
           district?: string | null
           email?: string | null
           full_name?: string
@@ -926,12 +929,22 @@ export type Database = {
         | "field_officer"
         | "accountant"
         | "client"
+        | "sales_admin"
+        | "sales_officer"
+        | "credit_admin"
+        | "credit_officer"
+        | "recovery_admin"
+        | "recovery_officer"
+        | "operations_admin"
+        | "operations_officer"
+        | "staff"
       asset_status:
         | "available"
         | "assigned"
         | "recovered"
         | "transferred"
         | "maintenance"
+      department: "sales" | "credit_collection" | "recovery" | "operations"
       loan_status:
         | "pending"
         | "approved"
@@ -1080,6 +1093,15 @@ export const Constants = {
         "field_officer",
         "accountant",
         "client",
+        "sales_admin",
+        "sales_officer",
+        "credit_admin",
+        "credit_officer",
+        "recovery_admin",
+        "recovery_officer",
+        "operations_admin",
+        "operations_officer",
+        "staff",
       ],
       asset_status: [
         "available",
@@ -1088,6 +1110,7 @@ export const Constants = {
         "transferred",
         "maintenance",
       ],
+      department: ["sales", "credit_collection", "recovery", "operations"],
       loan_status: [
         "pending",
         "approved",
