@@ -144,7 +144,7 @@ export const useAuth = () => {
   };
 
   const isStaff = (): boolean => {
-    return hasAnyRole(['super_admin', 'admin', 'field_officer', 'accountant']);
+    return hasAnyRole(['super_admin', 'admin', 'operations_admin', 'accountant', 'sales_admin', 'sales_officer', 'credit_admin', 'credit_officer', 'recovery_admin', 'recovery_officer', 'operations_officer', 'staff']);
   };
 
   const isAdmin = (): boolean => {

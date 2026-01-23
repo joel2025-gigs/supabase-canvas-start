@@ -1,6 +1,33 @@
 // NAWAP Asset Financing System Types
 
-export type AppRole = 'super_admin' | 'admin' | 'field_officer' | 'accountant' | 'client';
+// Role hierarchy:
+// - super_admin: Full access to everything
+// - admin: OPERATIONS + LOANS access, no ADMIN section
+// - operations_admin: Edit OPERATIONS, view-only LOANS, no ADMIN
+// - accountant: View-only LOANS + OPERATIONS, can download reports
+// - Department staff (single department assignment):
+//   - sales_admin / sales_officer
+//   - credit_admin / credit_officer (credit_admin does final loan approval)
+//   - recovery_admin / recovery_officer
+//   - operations_officer
+// - staff: Legacy role, view/edit only allocated department
+
+export type AppRole = 
+  | 'super_admin' 
+  | 'admin' 
+  | 'operations_admin'
+  | 'accountant' 
+  | 'sales_admin'
+  | 'sales_officer'
+  | 'credit_admin'
+  | 'credit_officer'
+  | 'recovery_admin'
+  | 'recovery_officer'
+  | 'operations_officer'
+  | 'staff';
+
+export type Department = 'sales' | 'credit_collection' | 'recovery' | 'operations';
+
 export type LoanStatus = 'pending' | 'under_review' | 'awaiting_asset' | 'awaiting_approval' | 'approved' | 'active' | 'completed' | 'defaulted' | 'recovered';
 export type PaymentStatus = 'pending' | 'confirmed' | 'rejected' | 'reconciled';
 export type PaymentMethod = 'mtn_momo' | 'airtel_money' | 'bank_transfer' | 'cash';
@@ -30,6 +57,7 @@ export interface Profile {
   district?: string;
   avatar_url?: string;
   branch_id?: string;
+  department?: Department;
   is_active: boolean;
   created_at: string;
   updated_at: string;

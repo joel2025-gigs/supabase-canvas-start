@@ -89,7 +89,7 @@ const Recovery = () => {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (user && hasAnyRole(['super_admin', 'admin', 'field_officer'])) {
+    if (user && hasAnyRole(['super_admin', 'admin', 'recovery_admin', 'recovery_officer'])) {
       fetchLoans();
     }
   }, [user, roles]);
@@ -236,7 +236,7 @@ const Recovery = () => {
     );
   }
 
-  if (!hasAnyRole(['super_admin', 'admin', 'field_officer'])) {
+  if (!hasAnyRole(['super_admin', 'admin', 'recovery_admin', 'recovery_officer'])) {
     return (
       <DashboardLayout>
         <Card>
