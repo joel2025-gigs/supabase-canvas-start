@@ -16,10 +16,12 @@ import {
   AlertTriangle,
   TrendingUp,
   DollarSign,
-  Calendar,
   User,
   FileText,
-  Users
+  Users,
+  ArrowRight,
+  Send,
+  Bike
 } from "lucide-react";
 import { InquiryCard, type InquiryWithDetails } from "@/components/loans/InquiryCard";
 import { InquiryEditDialog } from "@/components/loans/InquiryEditDialog";
@@ -36,9 +38,17 @@ interface LoanWithDetails {
   start_date: string;
   next_payment_date: string | null;
   missed_payments: number;
+  repayment_frequency: string;
   client: {
     full_name: string;
     phone: string;
+    district: string;
+  } | null;
+  asset: {
+    asset_type: string;
+    brand: string;
+    model: string;
+    registration_number: string | null;
   } | null;
 }
 
@@ -55,6 +65,8 @@ const CreditCollection = () => {
   const navigate = useNavigate();
   const [activeLoans, setActiveLoans] = useState<LoanWithDetails[]>([]);
   const [pendingLoans, setPendingLoans] = useState<LoanWithDetails[]>([]);
+  const [underReviewLoans, setUnderReviewLoans] = useState<LoanWithDetails[]>([]);
+  const [awaitingApprovalLoans, setAwaitingApprovalLoans] = useState<LoanWithDetails[]>([]);
   const [inquiries, setInquiries] = useState<InquiryWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingInquiry, setEditingInquiry] = useState<InquiryWithDetails | null>(null);
@@ -63,7 +75,8 @@ const CreditCollection = () => {
   const [isApplicationOpen, setIsApplicationOpen] = useState(false);
   const [stats, setStats] = useState({
     totalActive: 0,
-    totalPending: 0,
+    pendingKYC: 0,
+    awaitingApproval: 0,
     totalOutstanding: 0,
     todaysDue: 0,
     qualifiedLeads: 0,
@@ -109,48 +122,43 @@ const CreditCollection = () => {
 
   const fetchLoans = async () => {
     try {
-      // Fetch active loans for collection
-      const { data: active, error: activeError } = await supabase
-        .from("loans")
-        .select(`
-          id, loan_number, principal_amount, total_amount, loan_balance,
-          installment_amount, status, start_date, next_payment_date, missed_payments,
-          client:clients(full_name, phone)
-        `)
-        .eq("status", "active")
-        .is("deleted_at", null)
-        .order("next_payment_date", { ascending: true });
+      const loanFields = `
+        id, loan_number, principal_amount, total_amount, loan_balance,
+        installment_amount, status, start_date, next_payment_date, missed_payments, repayment_frequency,
+        client:clients(full_name, phone, district),
+        asset:assets(asset_type, brand, model, registration_number)
+      `;
 
-      if (activeError) throw activeError;
+      // Fetch all loan stages in parallel
+      const [activeResult, pendingResult, underReviewResult, awaitingApprovalResult] = await Promise.all([
+        supabase.from("loans").select(loanFields).eq("status", "active").is("deleted_at", null).order("next_payment_date", { ascending: true }),
+        supabase.from("loans").select(loanFields).eq("status", "pending").is("deleted_at", null).order("created_at", { ascending: false }),
+        supabase.from("loans").select(loanFields).eq("status", "under_review").is("deleted_at", null).order("created_at", { ascending: false }),
+        supabase.from("loans").select(loanFields).eq("status", "awaiting_approval").is("deleted_at", null).order("created_at", { ascending: false }),
+      ]);
 
-      // Fetch pending loans for approval
-      const { data: pending, error: pendingError } = await supabase
-        .from("loans")
-        .select(`
-          id, loan_number, principal_amount, total_amount, loan_balance,
-          installment_amount, status, start_date, next_payment_date, missed_payments,
-          client:clients(full_name, phone)
-        `)
-        .eq("status", "pending")
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+      if (activeResult.error) throw activeResult.error;
+      if (pendingResult.error) throw pendingResult.error;
+      if (underReviewResult.error) throw underReviewResult.error;
+      if (awaitingApprovalResult.error) throw awaitingApprovalResult.error;
 
-      if (pendingError) throw pendingError;
-
-      setActiveLoans(active || []);
-      setPendingLoans(pending || []);
+      setActiveLoans(activeResult.data || []);
+      setPendingLoans(pendingResult.data || []);
+      setUnderReviewLoans(underReviewResult.data || []);
+      setAwaitingApprovalLoans(awaitingApprovalResult.data || []);
 
       // Calculate stats
-      const totalOutstanding = (active || []).reduce((sum, loan) => sum + Number(loan.loan_balance), 0);
+      const totalOutstanding = (activeResult.data || []).reduce((sum, loan) => sum + Number(loan.loan_balance), 0);
       const today = new Date().toISOString().split('T')[0];
-      const todaysDue = (active || []).filter(loan => 
+      const todaysDue = (activeResult.data || []).filter(loan => 
         loan.next_payment_date && loan.next_payment_date <= today
       ).length;
 
       setStats(prev => ({
         ...prev,
-        totalActive: active?.length || 0,
-        totalPending: pending?.length || 0,
+        totalActive: activeResult.data?.length || 0,
+        pendingKYC: (pendingResult.data?.length || 0) + (underReviewResult.data?.length || 0),
+        awaitingApproval: awaitingApprovalResult.data?.length || 0,
         totalOutstanding,
         todaysDue,
       }));
@@ -160,7 +168,41 @@ const CreditCollection = () => {
     }
   };
 
-  const handleApproveLoan = async (loanId: string) => {
+  const handleSendToOperations = async (loanId: string) => {
+    try {
+      const { error } = await supabase
+        .from("loans")
+        .update({ status: 'awaiting_asset' })
+        .eq("id", loanId);
+
+      if (error) throw error;
+      
+      toast.success("Sent to Operations for asset assignment");
+      fetchData();
+    } catch (error) {
+      console.error("Error updating loan:", error);
+      toast.error("Failed to update loan");
+    }
+  };
+
+  const handleStartReview = async (loanId: string) => {
+    try {
+      const { error } = await supabase
+        .from("loans")
+        .update({ status: 'under_review' })
+        .eq("id", loanId);
+
+      if (error) throw error;
+      
+      toast.success("Loan moved to under review");
+      fetchData();
+    } catch (error) {
+      console.error("Error updating loan:", error);
+      toast.error("Failed to update loan");
+    }
+  };
+
+  const handleFinalApproval = async (loanId: string) => {
     try {
       const { error } = await supabase
         .from("loans")
@@ -173,7 +215,7 @@ const CreditCollection = () => {
 
       if (error) throw error;
       
-      toast.success("Loan approved successfully");
+      toast.success("Loan approved and activated! Client can now leave with their asset.");
       fetchData();
     } catch (error) {
       console.error("Error approving loan:", error);
@@ -231,8 +273,8 @@ const CreditCollection = () => {
       <DashboardLayout>
         <div className="space-y-6">
           <Skeleton className="h-8 w-64" />
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-24" />)}
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-24" />)}
           </div>
           <Skeleton className="h-96" />
         </div>
@@ -253,6 +295,48 @@ const CreditCollection = () => {
     );
   }
 
+  const LoanCard = ({ loan, actions }: { loan: LoanWithDetails; actions: React.ReactNode }) => (
+    <div className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="space-y-2 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-semibold">{loan.loan_number}</h3>
+            <Badge variant="outline" className={
+              loan.status === 'pending' ? 'bg-muted/50 text-muted-foreground' :
+              loan.status === 'under_review' ? 'bg-info/10 text-info border-info/30' :
+              loan.status === 'awaiting_approval' ? 'bg-success/10 text-success border-success/30' :
+              'bg-warning/10 text-warning border-warning/30'
+            }>
+              {loan.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <User className="h-4 w-4" />
+            {loan.client?.full_name || 'Unknown'} • {loan.client?.phone} • {loan.client?.district}
+          </div>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <span>
+              <span className="font-medium">Amount:</span> {formatCurrency(loan.total_amount)}
+            </span>
+            <span>
+              <span className="font-medium capitalize">{loan.repayment_frequency}:</span> {formatCurrency(loan.installment_amount)}
+            </span>
+            {loan.asset && (
+              <span className="flex items-center gap-1">
+                <Bike className="h-4 w-4" />
+                {loan.asset.brand} {loan.asset.model}
+                {loan.asset.registration_number && ` (${loan.asset.registration_number})`}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {actions}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -263,59 +347,70 @@ const CreditCollection = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <Card>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-info/10">
-                <FileText className="h-6 w-6 text-info" />
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-info/10">
+                <FileText className="h-5 w-5 text-info" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Qualified Leads</p>
-                <p className="text-2xl font-bold text-foreground">{stats.qualifiedLeads}</p>
+                <p className="text-xs text-muted-foreground">Leads</p>
+                <p className="text-xl font-bold text-foreground">{stats.qualifiedLeads}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-warning/10">
-                <Clock className="h-6 w-6 text-warning" />
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-warning/10">
+                <Clock className="h-5 w-5 text-warning" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Pending Approval</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalPending}</p>
+                <p className="text-xs text-muted-foreground">Pending KYC</p>
+                <p className="text-xl font-bold text-foreground">{stats.pendingKYC}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-primary/10">
-                <CreditCard className="h-6 w-6 text-primary" />
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-success/10">
+                <CheckCircle className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Active Loans</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalActive}</p>
+                <p className="text-xs text-muted-foreground">Final Approval</p>
+                <p className="text-xl font-bold text-foreground">{stats.awaitingApproval}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-success/10">
-                <DollarSign className="h-6 w-6 text-success" />
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <CreditCard className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Outstanding</p>
-                <p className="text-xl font-bold text-foreground">{formatCurrency(stats.totalOutstanding)}</p>
+                <p className="text-xs text-muted-foreground">Active</p>
+                <p className="text-xl font-bold text-foreground">{stats.totalActive}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-destructive/10">
-                <AlertTriangle className="h-6 w-6 text-destructive" />
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-accent/10">
+                <DollarSign className="h-5 w-5 text-accent" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Due Today</p>
-                <p className="text-2xl font-bold text-foreground">{stats.todaysDue}</p>
+                <p className="text-xs text-muted-foreground">Outstanding</p>
+                <p className="text-lg font-bold text-foreground">{formatCurrency(stats.totalOutstanding)}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-destructive/10">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Due Today</p>
+                <p className="text-xl font-bold text-foreground">{stats.todaysDue}</p>
               </div>
             </CardContent>
           </Card>
@@ -323,24 +418,31 @@ const CreditCollection = () => {
 
         {/* Tabs for different sections */}
         <Tabs defaultValue="applications" className="space-y-4">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="applications" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Loan Applications
+              <span className="hidden sm:inline">Loan</span> Applications
               {stats.qualifiedLeads > 0 && (
                 <Badge variant="secondary" className="ml-1">{stats.qualifiedLeads}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="pending" className="flex items-center gap-2">
+            <TabsTrigger value="kyc" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Pending Approvals
-              {stats.totalPending > 0 && (
-                <Badge variant="secondary" className="ml-1">{stats.totalPending}</Badge>
+              KYC Review
+              {stats.pendingKYC > 0 && (
+                <Badge variant="secondary" className="ml-1">{stats.pendingKYC}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="final-approval" className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Final Approval
+              {stats.awaitingApproval > 0 && (
+                <Badge variant="secondary" className="ml-1">{stats.awaitingApproval}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="collection" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
-              Active Collection
+              Collection
             </TabsTrigger>
           </TabsList>
 
@@ -380,50 +482,90 @@ const CreditCollection = () => {
             </Card>
           </TabsContent>
 
-          {/* Pending Approvals Tab */}
-          <TabsContent value="pending">
+          {/* KYC Review Tab */}
+          <TabsContent value="kyc">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-warning" />
-                  Pending Loan Approvals
+                  KYC Review - Due Diligence
                 </CardTitle>
-                <CardDescription>Review and approve new loan applications</CardDescription>
+                <CardDescription>
+                  Review loan applications and complete KYC before sending to Operations for asset assignment
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                {pendingLoans.length === 0 ? (
+                {pendingLoans.length === 0 && underReviewLoans.length === 0 ? (
                   <div className="text-center py-12">
                     <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No pending loans to approve.</p>
+                    <p className="text-muted-foreground">No pending KYC reviews.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    {/* Pending - need to start review */}
                     {pendingLoans.map((loan) => (
-                      <div key={loan.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">{loan.loan_number}</h3>
-                              <Badge variant="outline" className="bg-warning/10 text-warning">
-                                Pending
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <User className="h-4 w-4" />
-                              {loan.client?.full_name || 'Unknown'} • {loan.client?.phone}
-                            </div>
-                            <p className="text-sm">
-                              <span className="font-medium">Amount:</span> {formatCurrency(loan.total_amount)}
-                              <span className="mx-2">•</span>
-                              <span className="font-medium">Daily:</span> {formatCurrency(loan.installment_amount)}
-                            </p>
-                          </div>
-                          <Button onClick={() => handleApproveLoan(loan.id)}>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Approve
+                      <LoanCard
+                        key={loan.id}
+                        loan={loan}
+                        actions={
+                          <Button variant="outline" onClick={() => handleStartReview(loan.id)}>
+                            Start Review
                           </Button>
-                        </div>
-                      </div>
+                        }
+                      />
+                    ))}
+                    {/* Under review - can send to operations */}
+                    {underReviewLoans.map((loan) => (
+                      <LoanCard
+                        key={loan.id}
+                        loan={loan}
+                        actions={
+                          <Button onClick={() => handleSendToOperations(loan.id)}>
+                            <Send className="h-4 w-4 mr-2" />
+                            Send to Operations
+                            <ArrowRight className="h-4 w-4 ml-2" />
+                          </Button>
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Final Approval Tab */}
+          <TabsContent value="final-approval">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-success" />
+                  Final Approval - Ready for Disbursement
+                </CardTitle>
+                <CardDescription>
+                  Asset has been assigned by Operations. Complete final approval to activate the loan.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {awaitingApprovalLoans.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No loans awaiting final approval.</p>
+                    <p className="text-sm text-muted-foreground mt-1">They'll appear here after Operations assigns the asset.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {awaitingApprovalLoans.map((loan) => (
+                      <LoanCard
+                        key={loan.id}
+                        loan={loan}
+                        actions={
+                          <Button className="bg-success hover:bg-success/90" onClick={() => handleFinalApproval(loan.id)}>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Approve & Activate
+                          </Button>
+                        }
+                      />
                     ))}
                   </div>
                 )}
@@ -461,7 +603,7 @@ const CreditCollection = () => {
                                   <Badge variant="destructive">Overdue</Badge>
                                 )}
                                 {loan.missed_payments > 0 && (
-                                  <Badge variant="outline" className="text-warning">
+                                  <Badge variant="outline" className="border-destructive/30 text-destructive">
                                     {loan.missed_payments} missed
                                   </Badge>
                                 )}
@@ -475,17 +617,17 @@ const CreditCollection = () => {
                                   <span className="font-medium">Balance:</span> {formatCurrency(loan.loan_balance)}
                                 </span>
                                 <span>
-                                  <span className="font-medium">Daily:</span> {formatCurrency(loan.installment_amount)}
+                                  <span className="font-medium capitalize">{loan.repayment_frequency}:</span> {formatCurrency(loan.installment_amount)}
                                 </span>
-                                {loan.next_payment_date && (
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="h-4 w-4" />
-                                    Next: {new Date(loan.next_payment_date).toLocaleDateString()}
-                                  </span>
-                                )}
+                                <span>
+                                  <span className="font-medium">Next:</span>{' '}
+                                  {loan.next_payment_date 
+                                    ? new Date(loan.next_payment_date).toLocaleDateString()
+                                    : 'N/A'}
+                                </span>
                               </div>
                             </div>
-                            <Button variant="outline" onClick={() => navigate(`/payments?loan=${loan.id}`)}>
+                            <Button variant="outline" onClick={() => navigate('/payments')}>
                               Record Payment
                             </Button>
                           </div>
@@ -498,26 +640,33 @@ const CreditCollection = () => {
             </Card>
           </TabsContent>
         </Tabs>
-
-        {/* Dialogs */}
-        <InquiryEditDialog
-          inquiry={editingInquiry}
-          open={isEditDialogOpen}
-          onOpenChange={setIsEditDialogOpen}
-          onSave={handleSaveInquiry}
-        />
-
-        {user && (
-          <LoanApplicationDialog
-            inquiry={applicationInquiry}
-            open={isApplicationOpen}
-            onOpenChange={setIsApplicationOpen}
-            onSuccess={() => fetchData()}
-            userId={user.id}
-            userBranchId={profile?.branch_id}
-          />
-        )}
       </div>
+
+      {/* Edit Inquiry Dialog */}
+      <InquiryEditDialog
+        inquiry={editingInquiry}
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setEditingInquiry(null);
+        }}
+        onSave={handleSaveInquiry}
+      />
+
+      {/* Loan Application Dialog */}
+      <LoanApplicationDialog
+        inquiry={applicationInquiry}
+        open={isApplicationOpen}
+        onOpenChange={(open) => {
+          setIsApplicationOpen(open);
+          if (!open) setApplicationInquiry(null);
+        }}
+        onSuccess={() => {
+          fetchData();
+        }}
+        userId={user?.id || ''}
+        userBranchId={profile?.branch_id}
+      />
     </DashboardLayout>
   );
 };

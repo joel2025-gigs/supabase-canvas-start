@@ -885,6 +885,9 @@ export type Database = {
         | "completed"
         | "defaulted"
         | "recovered"
+        | "under_review"
+        | "awaiting_asset"
+        | "awaiting_approval"
       payment_method: "mtn_momo" | "airtel_money" | "bank_transfer" | "cash"
       payment_status: "pending" | "confirmed" | "rejected" | "reconciled"
       product_status: "draft" | "pending_review" | "approved" | "rejected"
@@ -1038,6 +1041,9 @@ export const Constants = {
         "completed",
         "defaulted",
         "recovered",
+        "under_review",
+        "awaiting_asset",
+        "awaiting_approval",
       ],
       payment_method: ["mtn_momo", "airtel_money", "bank_transfer", "cash"],
       payment_status: ["pending", "confirmed", "rejected", "reconciled"],

@@ -36,6 +36,7 @@ import {
   TrendingUp,
   Wallet,
   AlertTriangle,
+  Truck,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import nawapLogo from "@/assets/nawap-logo-white.png";
@@ -75,6 +76,13 @@ const navItems: NavItem[] = [
     href: "/departments/credit-collection",
     icon: <Wallet className="h-5 w-5" />,
     roles: ["super_admin", "admin", "field_officer", "accountant"],
+    section: "Loans",
+  },
+  {
+    label: "Operations",
+    href: "/departments/operations",
+    icon: <Truck className="h-5 w-5" />,
+    roles: ["super_admin", "admin", "field_officer"],
     section: "Loans",
   },
   {
