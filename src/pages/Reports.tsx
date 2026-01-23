@@ -48,7 +48,7 @@ const Reports = () => {
   const [overdueLoans, setOverdueLoans] = useState<any[]>([]);
   const [topClients, setTopClients] = useState<any[]>([]);
 
-  const { isAuthenticated, loading: authLoading, hasAnyRole } = useAuth();
+  const { isAuthenticated, loading: authLoading, hasAnyRole, roles } = useAuth();
   const navigate = useNavigate();
 
   const canViewReports = hasAnyRole(['super_admin', 'admin', 'accountant']);
@@ -65,7 +65,7 @@ const Reports = () => {
     } else if (isAuthenticated && !authLoading) {
       setLoading(false);
     }
-  }, [isAuthenticated, authLoading, canViewReports, dateRange]);
+  }, [isAuthenticated, authLoading, roles, dateRange]);
 
   const getDateRange = () => {
     const now = new Date();

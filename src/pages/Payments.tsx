@@ -54,7 +54,7 @@ const Payments = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const { user, profile, isAuthenticated, loading: authLoading, isStaff, isAdmin } = useAuth();
+  const { user, profile, isAuthenticated, loading: authLoading, isStaff, isAdmin, roles } = useAuth();
   const navigate = useNavigate();
 
   // Form state
@@ -77,7 +77,7 @@ const Payments = () => {
     } else if (isAuthenticated && !authLoading) {
       setLoading(false);
     }
-  }, [isAuthenticated, authLoading, isStaff()]);
+  }, [isAuthenticated, authLoading, roles]);
 
   const fetchPayments = async () => {
     try {

@@ -66,7 +66,7 @@ const formatCurrency = (amount: number) => {
 };
 
 const Recovery = () => {
-  const { user, loading: authLoading, hasAnyRole, isAdmin } = useAuth();
+  const { user, loading: authLoading, hasAnyRole, isAdmin, roles } = useAuth();
   const navigate = useNavigate();
   const [atRiskLoans, setAtRiskLoans] = useState<DefaultedLoan[]>([]);
   const [defaultedLoans, setDefaultedLoans] = useState<DefaultedLoan[]>([]);
@@ -92,7 +92,7 @@ const Recovery = () => {
     if (user && hasAnyRole(['super_admin', 'admin', 'field_officer'])) {
       fetchLoans();
     }
-  }, [user]);
+  }, [user, roles]);
 
   const fetchLoans = async () => {
     try {

@@ -35,7 +35,7 @@ interface InquiryWithDetails {
 }
 
 const Sales = () => {
-  const { user, loading: authLoading, isStaff, hasAnyRole } = useAuth();
+  const { user, loading: authLoading, isStaff, hasAnyRole, roles } = useAuth();
   const navigate = useNavigate();
   const [inquiries, setInquiries] = useState<InquiryWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +56,7 @@ const Sales = () => {
     if (user && isStaff()) {
       fetchInquiries();
     }
-  }, [user, isStaff]);
+  }, [user, roles]);
 
   const fetchInquiries = async () => {
     try {

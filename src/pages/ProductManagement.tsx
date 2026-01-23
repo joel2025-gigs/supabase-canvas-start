@@ -90,7 +90,7 @@ const statusConfig = {
 };
 
 const ProductManagement = () => {
-  const { loading: authLoading, isAuthenticated, isAdmin, isStaff, user } = useAuth();
+  const { loading: authLoading, isAuthenticated, isAdmin, isStaff, user, roles } = useAuth();
   const navigate = useNavigate();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -151,7 +151,7 @@ const ProductManagement = () => {
     if (isAuthenticated && isStaff()) {
       fetchProducts();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, roles]);
 
   const fetchProducts = async () => {
     try {

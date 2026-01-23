@@ -60,7 +60,7 @@ const Branches = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const { isAuthenticated, loading: authLoading, isSuperAdmin } = useAuth();
+  const { isAuthenticated, loading: authLoading, isSuperAdmin, roles } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -82,7 +82,7 @@ const Branches = () => {
     } else if (isAuthenticated && !authLoading) {
       setLoading(false);
     }
-  }, [isAuthenticated, authLoading, isSuperAdmin()]);
+  }, [isAuthenticated, authLoading, roles]);
 
   const fetchBranches = async () => {
     try {
