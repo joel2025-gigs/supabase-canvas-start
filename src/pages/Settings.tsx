@@ -32,7 +32,7 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [branches, setBranches] = useState<Branch[]>([]);
   
-  const { user, profile, isAuthenticated, loading: authLoading, isAdmin, refetch } = useAuth();
+  const { user, profile, isAuthenticated, loading: authLoading, isAdmin, refetch, roles } = useAuth();
   const navigate = useNavigate();
 
   const [profileData, setProfileData] = useState({
@@ -66,7 +66,7 @@ const Settings = () => {
     if (isAuthenticated && isAdmin()) {
       fetchBranches();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, roles]);
 
   const fetchBranches = async () => {
     const { data } = await supabase

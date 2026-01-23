@@ -41,7 +41,7 @@ const AuditLogs = () => {
   const [selectedTable, setSelectedTable] = useState<string>("all");
   const [selectedAction, setSelectedAction] = useState<string>("all");
 
-  const { isAuthenticated, loading: authLoading, hasAnyRole } = useAuth();
+  const { isAuthenticated, loading: authLoading, hasAnyRole, roles } = useAuth();
   const navigate = useNavigate();
 
   const canViewAuditLogs = hasAnyRole(['super_admin', 'admin', 'accountant']);
@@ -59,7 +59,7 @@ const AuditLogs = () => {
     } else if (isAuthenticated && !authLoading) {
       setLoading(false);
     }
-  }, [isAuthenticated, authLoading, canViewAuditLogs]);
+  }, [isAuthenticated, authLoading, roles]);
 
   const fetchAuditLogs = async () => {
     try {

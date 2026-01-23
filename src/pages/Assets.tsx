@@ -70,7 +70,7 @@ const Assets = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const { user, profile, isAuthenticated, loading: authLoading, isStaff } = useAuth();
+  const { user, profile, isAuthenticated, loading: authLoading, isStaff, roles } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -100,7 +100,7 @@ const Assets = () => {
     } else if (isAuthenticated && !authLoading) {
       setLoading(false);
     }
-  }, [isAuthenticated, authLoading, isStaff()]);
+  }, [isAuthenticated, authLoading, roles]);
 
   const fetchAssets = async () => {
     try {

@@ -45,7 +45,7 @@ const formatCurrency = (amount: number) => {
 };
 
 const CreditCollection = () => {
-  const { user, loading: authLoading, hasAnyRole } = useAuth();
+  const { user, loading: authLoading, hasAnyRole, roles } = useAuth();
   const navigate = useNavigate();
   const [activeLoans, setActiveLoans] = useState<LoanWithDetails[]>([]);
   const [pendingLoans, setPendingLoans] = useState<LoanWithDetails[]>([]);
@@ -67,7 +67,7 @@ const CreditCollection = () => {
     if (user && hasAnyRole(['super_admin', 'admin', 'field_officer', 'accountant'])) {
       fetchLoans();
     }
-  }, [user]);
+  }, [user, roles]);
 
   const fetchLoans = async () => {
     try {

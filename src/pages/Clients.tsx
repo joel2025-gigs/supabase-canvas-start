@@ -73,7 +73,7 @@ const Clients = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
-  const { user, profile, isAuthenticated, loading: authLoading, isStaff } = useAuth();
+  const { user, profile, isAuthenticated, loading: authLoading, isStaff, roles } = useAuth();
   const { isOnline, addToSyncQueue, saveLocally } = useOfflineSync();
   const navigate = useNavigate();
 
@@ -107,7 +107,7 @@ const Clients = () => {
     } else if (isAuthenticated && !authLoading) {
       setLoading(false);
     }
-  }, [isAuthenticated, authLoading, isStaff()]);
+  }, [isAuthenticated, authLoading, roles]);
 
   const fetchAvailableAssets = async () => {
     const { data } = await supabase
