@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/nawap-logo.png";
 
+/**
+ * Public website navbar - completely independent of auth state.
+ * Staff access the admin dashboard via /auth/login directly.
+ * This navbar always shows the same links for all visitors.
+ */
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, signOut, isStaff } = useAuth();
 
   const navLinks = [
     { name: "Home", path: "/" },
@@ -16,8 +19,6 @@ const Navbar = () => {
     { name: "Careers", path: "/careers" },
     { name: "Contact", path: "/contact" },
   ];
-
-  // Staff can access login via /auth/login directly - not shown in nav for public
 
   return (
     <nav className="bg-background border-b sticky top-0 z-50 shadow-sm">
@@ -40,25 +41,11 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Desktop Auth */}
-          <div className="hidden md:flex items-center space-x-4">
-            {user ? (
-              <>
-                <Link to="/dashboard">
-                  <Button variant="outline" size="sm">
-                    <User className="w-4 h-4 mr-2" />
-                    Dashboard
-                  </Button>
-                </Link>
-                <Button variant="ghost" size="sm" onClick={() => signOut()}>
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <Link to="/get-started">
-                <Button size="sm" className="gradient-accent">Get Started</Button>
-              </Link>
-            )}
+          {/* Desktop CTA - Always show Get Started */}
+          <div className="hidden md:flex items-center">
+            <Link to="/get-started">
+              <Button size="sm" className="gradient-accent">Get Started</Button>
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -85,24 +72,10 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
-            <div className="pt-4 border-t space-y-2">
-              {user ? (
-                <>
-                  <Link to="/dashboard" onClick={() => setIsOpen(false)}>
-                    <Button variant="outline" className="w-full" size="sm">
-                      <User className="w-4 h-4 mr-2" />
-                      Dashboard
-                    </Button>
-                  </Link>
-                  <Button variant="ghost" className="w-full" size="sm" onClick={() => signOut()}>
-                    Sign Out
-                  </Button>
-                </>
-              ) : (
-                <Link to="/get-started" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full gradient-accent" size="sm">Get Started</Button>
-                </Link>
-              )}
+            <div className="pt-4 border-t">
+              <Link to="/get-started" onClick={() => setIsOpen(false)}>
+                <Button className="w-full gradient-accent" size="sm">Get Started</Button>
+              </Link>
             </div>
           </div>
         </div>
