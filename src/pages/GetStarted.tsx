@@ -18,6 +18,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, CheckCircle2, Bike } from "lucide-react";
+import LoanCalculator from "@/components/loans/LoanCalculator";
 
 const inquirySchema = z.object({
   full_name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name is too long"),
@@ -133,7 +134,7 @@ const GetStarted = () => {
       
       <main className="flex-1 py-12">
         <div className="section-container">
-          <div className="max-w-2xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
             <Card className="shadow-elegant">
               <CardHeader className="text-center pb-2">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
@@ -300,6 +301,11 @@ const GetStarted = () => {
                 </form>
               </CardContent>
             </Card>
+            
+            {/* Loan Calculator */}
+            <div className="lg:sticky lg:top-8 h-fit">
+              <LoanCalculator />
+            </div>
           </div>
         </div>
       </main>
