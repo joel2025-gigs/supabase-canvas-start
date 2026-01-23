@@ -33,6 +33,9 @@ import {
   WifiOff,
   RefreshCw,
   Package,
+  TrendingUp,
+  Wallet,
+  AlertTriangle,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import nawapLogo from "@/assets/nawap-logo.png";
@@ -42,6 +45,7 @@ interface NavItem {
   href: string;
   icon: ReactNode;
   roles: string[];
+  section?: string;
 }
 
 const navItems: NavItem[] = [
@@ -51,65 +55,99 @@ const navItems: NavItem[] = [
     icon: <LayoutDashboard className="h-5 w-5" />,
     roles: ["super_admin", "admin", "field_officer", "accountant", "client"],
   },
+  // Departments
+  {
+    label: "Sales",
+    href: "/departments/sales",
+    icon: <TrendingUp className="h-5 w-5" />,
+    roles: ["super_admin", "admin", "field_officer"],
+    section: "Departments",
+  },
+  {
+    label: "Credit & Collection",
+    href: "/departments/credit-collection",
+    icon: <Wallet className="h-5 w-5" />,
+    roles: ["super_admin", "admin", "field_officer", "accountant"],
+    section: "Departments",
+  },
+  {
+    label: "Recovery",
+    href: "/departments/recovery",
+    icon: <AlertTriangle className="h-5 w-5" />,
+    roles: ["super_admin", "admin", "field_officer"],
+    section: "Departments",
+  },
+  // Operations
   {
     label: "Products",
     href: "/product-management",
     icon: <Package className="h-5 w-5" />,
     roles: ["super_admin", "admin", "field_officer"],
+    section: "Operations",
   },
   {
     label: "Clients",
     href: "/clients",
     icon: <Users className="h-5 w-5" />,
     roles: ["super_admin", "admin", "field_officer", "accountant"],
+    section: "Operations",
   },
   {
     label: "Assets",
     href: "/assets",
     icon: <Bike className="h-5 w-5" />,
     roles: ["super_admin", "admin", "field_officer", "accountant"],
+    section: "Operations",
   },
   {
     label: "Loans",
     href: "/loans",
     icon: <CreditCard className="h-5 w-5" />,
     roles: ["super_admin", "admin", "field_officer", "accountant"],
+    section: "Operations",
   },
   {
     label: "Payments",
     href: "/payments",
     icon: <Receipt className="h-5 w-5" />,
     roles: ["super_admin", "admin", "field_officer", "accountant"],
+    section: "Operations",
   },
   {
     label: "Reports",
     href: "/reports",
     icon: <FileText className="h-5 w-5" />,
     roles: ["super_admin", "admin", "accountant"],
+    section: "Operations",
   },
+  // Admin
   {
     label: "Branches",
     href: "/branches",
     icon: <Building2 className="h-5 w-5" />,
     roles: ["super_admin"],
+    section: "Admin",
   },
   {
     label: "Users",
     href: "/users",
     icon: <Shield className="h-5 w-5" />,
     roles: ["super_admin", "admin"],
+    section: "Admin",
   },
   {
     label: "Audit Logs",
     href: "/audit-logs",
     icon: <History className="h-5 w-5" />,
     roles: ["super_admin", "admin", "accountant"],
+    section: "Admin",
   },
   {
     label: "Settings",
     href: "/settings",
     icon: <Settings className="h-5 w-5" />,
     roles: ["super_admin", "admin"],
+    section: "Admin",
   },
 ];
 
@@ -170,27 +208,40 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
         <nav className="flex-1 overflow-y-auto py-4">
           <ul className="space-y-1 px-3">
-            {filteredNavItems.map((item) => (
-              <li key={item.href}>
-                <Link
-                  to={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                    location.pathname === item.href
-                      ? "bg-primary/10 text-primary border border-primary/30 shadow-glow"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                  )}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <span className={cn(
-                    location.pathname === item.href ? "text-primary" : ""
-                  )}>
-                    {item.icon}
-                  </span>
-                  {item.label}
-                </Link>
-              </li>
-            ))}
+            {(() => {
+              let currentSection = "";
+              return filteredNavItems.map((item) => {
+                const showSection = item.section && item.section !== currentSection;
+                if (item.section) currentSection = item.section;
+                
+                return (
+                  <li key={item.href}>
+                    {showSection && (
+                      <div className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider px-3 pt-4 pb-2">
+                        {item.section}
+                      </div>
+                    )}
+                    <Link
+                      to={item.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                        location.pathname === item.href
+                          ? "bg-primary/10 text-primary border border-primary/30 shadow-glow"
+                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      )}
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <span className={cn(
+                        location.pathname === item.href ? "text-primary" : ""
+                      )}>
+                        {item.icon}
+                      </span>
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              });
+            })()}
           </ul>
         </nav>
 
