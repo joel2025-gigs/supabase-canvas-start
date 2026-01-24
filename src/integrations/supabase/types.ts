@@ -291,6 +291,158 @@ export type Database = {
           },
         ]
       }
+      department_officers: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          department: Database["public"]["Enums"]["department"]
+          full_name: string
+          id: string
+          is_active: boolean
+          phone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          department: Database["public"]["Enums"]["department"]
+          full_name: string
+          id?: string
+          is_active?: boolean
+          phone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          department?: Database["public"]["Enums"]["department"]
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          phone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      department_performance: {
+        Row: {
+          actual_value: number | null
+          amount_disbursed: number | null
+          at_risk_loans_count: number | null
+          cash_sales_count: number | null
+          collection_rate: number | null
+          created_at: string
+          default_rate: number | null
+          department: Database["public"]["Enums"]["department"]
+          id: string
+          loan_sales_count: number | null
+          notes: string | null
+          officer_id: string | null
+          period_end: string
+          period_start: string
+          recorded_by: string | null
+          recovery_rate: number | null
+          target_value: number | null
+          total_recovered_amount: number | null
+          total_sales_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          actual_value?: number | null
+          amount_disbursed?: number | null
+          at_risk_loans_count?: number | null
+          cash_sales_count?: number | null
+          collection_rate?: number | null
+          created_at?: string
+          default_rate?: number | null
+          department: Database["public"]["Enums"]["department"]
+          id?: string
+          loan_sales_count?: number | null
+          notes?: string | null
+          officer_id?: string | null
+          period_end: string
+          period_start: string
+          recorded_by?: string | null
+          recovery_rate?: number | null
+          target_value?: number | null
+          total_recovered_amount?: number | null
+          total_sales_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actual_value?: number | null
+          amount_disbursed?: number | null
+          at_risk_loans_count?: number | null
+          cash_sales_count?: number | null
+          collection_rate?: number | null
+          created_at?: string
+          default_rate?: number | null
+          department?: Database["public"]["Enums"]["department"]
+          id?: string
+          loan_sales_count?: number | null
+          notes?: string | null
+          officer_id?: string | null
+          period_end?: string
+          period_start?: string
+          recorded_by?: string | null
+          recovery_rate?: number | null
+          target_value?: number | null
+          total_recovered_amount?: number | null
+          total_sales_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_performance_officer_id_fkey"
+            columns: ["officer_id"]
+            isOneToOne: false
+            referencedRelation: "department_officers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      department_targets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          department: Database["public"]["Enums"]["department"]
+          id: string
+          is_active: boolean
+          max_officers: number | null
+          per_officer_target: number | null
+          target_type: string
+          target_value: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          department: Database["public"]["Enums"]["department"]
+          id?: string
+          is_active?: boolean
+          max_officers?: number | null
+          per_officer_target?: number | null
+          target_type?: string
+          target_value?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          department?: Database["public"]["Enums"]["department"]
+          id?: string
+          is_active?: boolean
+          max_officers?: number | null
+          per_officer_target?: number | null
+          target_type?: string
+          target_value?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inquiries: {
         Row: {
           assigned_to: string | null
