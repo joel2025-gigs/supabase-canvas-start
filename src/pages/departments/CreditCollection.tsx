@@ -20,7 +20,7 @@ import {
   CheckCircle, 
   Clock, 
   AlertTriangle,
-  TrendingUp,
+  TrendingDown,
   DollarSign,
   User,
   FileText,
@@ -28,12 +28,33 @@ import {
   ArrowRight,
   Send,
   Bike,
-  Printer
+  Printer,
+  UserPlus,
+  Percent,
+  Target
 } from "lucide-react";
+import { DepartmentStatsCard } from "@/components/departments/DepartmentStatsCard";
+import { OfficerManagement } from "@/components/departments/OfficerManagement";
+import { RecordPerformanceDialog } from "@/components/departments/RecordPerformanceDialog";
 import { InquiryCard, type InquiryWithDetails } from "@/components/loans/InquiryCard";
 import { InquiryEditDialog } from "@/components/loans/InquiryEditDialog";
 import { LoanApplicationDialog } from "@/components/loans/LoanApplicationDialog";
 import { LoanContract } from "@/components/loans/LoanContract";
+
+interface Officer {
+  id: string;
+  user_id: string;
+  full_name: string;
+  phone: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface DepartmentTarget {
+  target_value: number;
+  max_officers: number;
+  per_officer_target: number;
+}
 
 interface LoanWithDetails {
   id: string;
@@ -90,6 +111,8 @@ const CreditCollection = () => {
   const { user, profile, loading: authLoading, hasAnyRole, roles } = useAuth();
   const navigate = useNavigate();
   const contractRef = useRef<HTMLDivElement>(null);
+  const [officers, setOfficers] = useState<Officer[]>([]);
+  const [target, setTarget] = useState<DepartmentTarget | null>(null);
   const [activeLoans, setActiveLoans] = useState<LoanWithDetails[]>([]);
   const [pendingLoans, setPendingLoans] = useState<LoanWithDetails[]>([]);
   const [underReviewLoans, setUnderReviewLoans] = useState<LoanWithDetails[]>([]);
@@ -102,6 +125,11 @@ const CreditCollection = () => {
   const [contractData, setContractData] = useState<ContractData | null>(null);
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
   const [isApplicationOpen, setIsApplicationOpen] = useState(false);
+  const [isPerformanceDialogOpen, setIsPerformanceDialogOpen] = useState(false);
+  const [performanceStats, setPerformanceStats] = useState({
+    currentLoansPercent: 0,
+    collectionRate: 0,
+  });
   const [stats, setStats] = useState({
     totalActive: 0,
     pendingKYC: 0,
@@ -110,6 +138,8 @@ const CreditCollection = () => {
     todaysDue: 0,
     qualifiedLeads: 0,
   });
+
+  const canManage = hasAnyRole(['super_admin', 'admin', 'credit_admin']);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -125,9 +155,68 @@ const CreditCollection = () => {
 
   const fetchData = async () => {
     try {
-      await Promise.all([fetchLoans(), fetchInquiries()]);
+      await Promise.all([fetchOfficers(), fetchTarget(), fetchLoans(), fetchInquiries(), fetchPerformance()]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchOfficers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("department_officers")
+        .select("*")
+        .eq("department", "credit_collection")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setOfficers(data || []);
+    } catch (error) {
+      console.error("Error fetching officers:", error);
+    }
+  };
+
+  const fetchTarget = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("department_targets")
+        .select("target_value, max_officers, per_officer_target")
+        .eq("department", "credit_collection")
+        .eq("is_active", true)
+        .single();
+
+      if (error && error.code !== "PGRST116") throw error;
+      setTarget(data);
+    } catch (error) {
+      console.error("Error fetching target:", error);
+    }
+  };
+
+  const fetchPerformance = async () => {
+    try {
+      const today = new Date();
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay());
+
+      const { data, error } = await supabase
+        .from("department_performance")
+        .select("collection_rate, default_rate, amount_disbursed")
+        .eq("department", "credit_collection")
+        .gte("period_start", weekStart.toISOString().split("T")[0])
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setPerformanceStats({
+          currentLoansPercent: data[0].collection_rate || 0,
+          collectionRate: data[0].collection_rate || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching performance:", error);
     }
   };
 
@@ -159,7 +248,6 @@ const CreditCollection = () => {
         asset:assets(asset_type, brand, model, chassis_number, engine_number, registration_number, color)
       `;
 
-      // Fetch all loan stages in parallel
       const [activeResult, pendingResult, underReviewResult, awaitingApprovalResult] = await Promise.all([
         supabase.from("loans").select(loanFields).eq("status", "active").is("deleted_at", null).order("next_payment_date", { ascending: true }),
         supabase.from("loans").select(loanFields).eq("status", "pending").is("deleted_at", null).order("created_at", { ascending: false }),
@@ -177,7 +265,6 @@ const CreditCollection = () => {
       setUnderReviewLoans(underReviewResult.data || []);
       setAwaitingApprovalLoans(awaitingApprovalResult.data || []);
 
-      // Calculate stats
       const totalOutstanding = (activeResult.data || []).reduce((sum, loan) => sum + Number(loan.loan_balance), 0);
       const today = new Date().toISOString().split('T')[0];
       const todaysDue = (activeResult.data || []).filter(loan => 
@@ -236,7 +323,6 @@ const CreditCollection = () => {
     try {
       const approvedAt = new Date().toISOString();
       
-      // Update loan status
       const { error } = await supabase
         .from("loans")
         .update({ 
@@ -248,11 +334,9 @@ const CreditCollection = () => {
 
       if (error) throw error;
       
-      // Find the loan from awaiting approval list for contract
       const loan = awaitingApprovalLoans.find(l => l.id === loanId);
       
       if (loan) {
-        // Prepare contract data and open print dialog
         setContractData({
           loan,
           approvedBy: profile?.full_name || 'Authorized Officer',
@@ -359,8 +443,8 @@ const CreditCollection = () => {
       <DashboardLayout>
         <div className="space-y-6">
           <Skeleton className="h-8 w-64" />
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-24" />)}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32" />)}
           </div>
           <Skeleton className="h-96" />
         </div>
@@ -380,6 +464,9 @@ const CreditCollection = () => {
       </DashboardLayout>
     );
   }
+
+  const targetValue = target?.target_value || 75;
+  const isBelowTarget = performanceStats.currentLoansPercent < targetValue;
 
   const LoanCard = ({ loan, actions }: { loan: LoanWithDetails; actions: React.ReactNode }) => (
     <div className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
@@ -428,127 +515,100 @@ const CreditCollection = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Credit & Collection</h1>
-          <p className="text-muted-foreground">Manage loan applications, approvals, and daily collections</p>
+          <h1 className="text-2xl font-bold text-foreground">Credit Department</h1>
+          <p className="text-muted-foreground">Manage credit officers and track loan performance</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-info/10">
-                <FileText className="h-5 w-5 text-info" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Leads</p>
-                <p className="text-xl font-bold text-foreground">{stats.qualifiedLeads}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-warning/10">
-                <Clock className="h-5 w-5 text-warning" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Pending KYC</p>
-                <p className="text-xl font-bold text-foreground">{stats.pendingKYC}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10">
-                <CheckCircle className="h-5 w-5 text-success" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Final Approval</p>
-                <p className="text-xl font-bold text-foreground">{stats.awaitingApproval}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <CreditCard className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Active</p>
-                <p className="text-xl font-bold text-foreground">{stats.totalActive}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-accent/10">
-                <DollarSign className="h-5 w-5 text-accent" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Outstanding</p>
-                <p className="text-lg font-bold text-foreground">{formatCurrency(stats.totalOutstanding)}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/10">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Due Today</p>
-                <p className="text-xl font-bold text-foreground">{stats.todaysDue}</p>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <DepartmentStatsCard
+            title="Current Loans"
+            value={`${performanceStats.currentLoansPercent.toFixed(1)}%`}
+            target={targetValue}
+            showProgress
+            subtitle={`Target: ${targetValue}%`}
+            icon={TrendingDown}
+            iconBgColor="bg-warning/10"
+            valueColor={isBelowTarget ? "text-destructive" : "text-success"}
+            isBelowTarget={isBelowTarget}
+          />
+          <DepartmentStatsCard
+            title="Credit Officers"
+            value={officers.length}
+            subtitle=""
+            icon={Users}
+            iconBgColor="bg-success/10"
+            valueColor="text-foreground"
+          />
+          <DepartmentStatsCard
+            title="Target"
+            value={`${targetValue}%`}
+            subtitle="Weekly current loan target"
+            icon={Target}
+            iconBgColor="bg-success/10"
+            valueColor="text-success"
+          />
+          <DepartmentStatsCard
+            title="Payment Cycle"
+            value="Weekly"
+            subtitle=""
+            icon={Clock}
+            iconBgColor="bg-success/10"
+            valueColor="text-foreground"
+          />
         </div>
 
-        {/* Tabs for different sections */}
-        <Tabs defaultValue="applications" className="space-y-4">
-          <TabsList className="flex-wrap h-auto gap-1">
-            <TabsTrigger value="applications" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Loan</span> Applications
-              {stats.qualifiedLeads > 0 && (
-                <Badge variant="secondary" className="ml-1">{stats.qualifiedLeads}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="kyc" className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              KYC Review
-              {stats.pendingKYC > 0 && (
-                <Badge variant="secondary" className="ml-1">{stats.pendingKYC}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="final-approval" className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Final Approval
-              {stats.awaitingApproval > 0 && (
-                <Badge variant="secondary" className="ml-1">{stats.awaitingApproval}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="collection" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Collection
-            </TabsTrigger>
+        {/* Action Buttons */}
+        {canManage && (
+          <div className="flex gap-3">
+            <Button className="bg-primary hover:bg-primary/90">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Credit Officer
+            </Button>
+            <Button 
+              variant="outline" 
+              className="border-success text-success hover:bg-success/10"
+              onClick={() => setIsPerformanceDialogOpen(true)}
+            >
+              <Percent className="h-4 w-4 mr-2" />
+              Record Performance
+            </Button>
+          </div>
+        )}
+
+        {/* Officers List */}
+        <OfficerManagement
+          department="credit_collection"
+          officers={officers}
+          maxOfficers={target?.max_officers || 4}
+          canManage={canManage}
+          onRefresh={fetchOfficers}
+          userId={user?.id || ""}
+        />
+
+        {/* Loan Management Tabs */}
+        <Tabs defaultValue="applications" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="applications">Applications ({stats.qualifiedLeads})</TabsTrigger>
+            <TabsTrigger value="pending">Pending KYC ({stats.pendingKYC})</TabsTrigger>
+            <TabsTrigger value="approval">Final Approval ({stats.awaitingApproval})</TabsTrigger>
+            <TabsTrigger value="active">Active ({stats.totalActive})</TabsTrigger>
           </TabsList>
 
-          {/* Loan Applications Tab */}
-          <TabsContent value="applications">
+          <TabsContent value="applications" className="mt-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Qualified Leads - Ready for Application
+                  Loan Applications (Qualified Leads)
                 </CardTitle>
-                <CardDescription>
-                  Process loan applications for qualified leads. Complete KYC and submit for approval.
-                </CardDescription>
+                <CardDescription>Convert qualified leads into formal loan applications</CardDescription>
               </CardHeader>
               <CardContent>
                 {inquiries.length === 0 ? (
                   <div className="text-center py-12">
                     <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No qualified leads. They'll appear here from the Sales pipeline.</p>
+                    <p className="text-muted-foreground">No qualified leads. Sales team will send qualified leads here.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -557,9 +617,9 @@ const CreditCollection = () => {
                         key={inquiry.id}
                         inquiry={inquiry}
                         onEdit={handleEditInquiry}
-                        onStartApplication={handleStartApplication}
                         onUpdateStatus={handleUpdateStatus}
-                        showApplicationButton={true}
+                        showApplicationButton
+                        onStartApplication={handleStartApplication}
                       />
                     ))}
                   </div>
@@ -568,54 +628,97 @@ const CreditCollection = () => {
             </Card>
           </TabsContent>
 
-          {/* KYC Review Tab */}
-          <TabsContent value="kyc">
+          <TabsContent value="pending" className="mt-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-warning" />
-                  KYC Review - Due Diligence
+                  <Clock className="h-5 w-5" />
+                  Pending KYC Review
                 </CardTitle>
-                <CardDescription>
-                  Review loan applications and complete KYC before sending to Operations for asset assignment
-                </CardDescription>
+                <CardDescription>Review client documents and verify information</CardDescription>
               </CardHeader>
               <CardContent>
-                {pendingLoans.length === 0 && underReviewLoans.length === 0 ? (
+                {[...pendingLoans, ...underReviewLoans].length === 0 ? (
                   <div className="text-center py-12">
-                    <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No pending KYC reviews.</p>
+                    <CheckCircle className="h-12 w-12 text-success mx-auto mb-4" />
+                    <p className="text-muted-foreground">No loans pending KYC review.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {/* Pending - need to start review */}
-                    {pendingLoans.map((loan) => (
+                    {[...pendingLoans, ...underReviewLoans].map((loan) => (
                       <LoanCard
                         key={loan.id}
                         loan={loan}
                         actions={
-                          <Button variant="outline" onClick={() => handleStartReview(loan.id)}>
-                            Start Review
-                          </Button>
+                          <>
+                            {loan.status === 'pending' && (
+                              <Button size="sm" onClick={() => handleStartReview(loan.id)}>
+                                <ArrowRight className="h-4 w-4 mr-2" />
+                                Start Review
+                              </Button>
+                            )}
+                            {loan.status === 'under_review' && (
+                              <>
+                                {loan.asset ? (
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-success hover:bg-success/90"
+                                    onClick={() => {
+                                      supabase.from("loans").update({ status: 'awaiting_approval' }).eq("id", loan.id)
+                                        .then(() => { toast.success("Moved to final approval"); fetchData(); });
+                                    }}
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    Ready for Approval
+                                  </Button>
+                                ) : (
+                                  <Button size="sm" variant="outline" onClick={() => handleSendToOperations(loan.id)}>
+                                    <Send className="h-4 w-4 mr-2" />
+                                    Send to Operations
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                          </>
                         }
                       />
                     ))}
-                    {/* Under review - approve if asset assigned, otherwise send to operations */}
-                    {underReviewLoans.map((loan) => (
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="approval" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-success">
+                  <CheckCircle className="h-5 w-5" />
+                  Awaiting Final Approval
+                </CardTitle>
+                <CardDescription>Loans ready for Credit Admin approval and contract generation</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {awaitingApprovalLoans.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No loans awaiting final approval.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {awaitingApprovalLoans.map((loan) => (
                       <LoanCard
                         key={loan.id}
                         loan={loan}
                         actions={
-                          loan.asset ? (
-                            <Button className="bg-success hover:bg-success/90" onClick={() => handleFinalApproval(loan.id)}>
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Approve & Activate
-                            </Button>
-                          ) : (
-                            <Button onClick={() => handleSendToOperations(loan.id)}>
-                              <Send className="h-4 w-4 mr-2" />
-                              Send to Operations
-                              <ArrowRight className="h-4 w-4 ml-2" />
+                          canManage && (
+                            <Button 
+                              size="sm" 
+                              className="bg-success hover:bg-success/90"
+                              onClick={() => handleFinalApproval(loan.id)}
+                            >
+                              <Printer className="h-4 w-4 mr-2" />
+                              Approve & Print Contract
                             </Button>
                           )
                         }
@@ -627,36 +730,34 @@ const CreditCollection = () => {
             </Card>
           </TabsContent>
 
-          {/* Final Approval Tab */}
-          <TabsContent value="final-approval">
+          <TabsContent value="active" className="mt-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-success" />
-                  Final Approval - Ready for Disbursement
+                  <CreditCard className="h-5 w-5" />
+                  Active Loans
                 </CardTitle>
-                <CardDescription>
-                  Asset has been assigned by Operations. Complete final approval to activate the loan.
-                </CardDescription>
+                <CardDescription>Monitor active loans and collections</CardDescription>
               </CardHeader>
               <CardContent>
-                {awaitingApprovalLoans.length === 0 ? (
+                {activeLoans.length === 0 ? (
                   <div className="text-center py-12">
-                    <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No loans awaiting final approval.</p>
-                    <p className="text-sm text-muted-foreground mt-1">They'll appear here after Operations assigns the asset.</p>
+                    <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No active loans.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {awaitingApprovalLoans.map((loan) => (
+                    {activeLoans.slice(0, 10).map((loan) => (
                       <LoanCard
                         key={loan.id}
                         loan={loan}
                         actions={
-                          <Button className="bg-success hover:bg-success/90" onClick={() => handleFinalApproval(loan.id)}>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Approve & Activate
-                          </Button>
+                          loan.missed_payments && loan.missed_payments >= 3 ? (
+                            <Badge variant="destructive">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              At Risk
+                            </Badge>
+                          ) : null
                         }
                       />
                     ))}
@@ -665,165 +766,84 @@ const CreditCollection = () => {
               </CardContent>
             </Card>
           </TabsContent>
-
-          {/* Active Collection Tab */}
-          <TabsContent value="collection">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Active Loans Collection
-                </CardTitle>
-                <CardDescription>Track daily collections and payment status</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {activeLoans.length === 0 ? (
-                  <div className="text-center py-12">
-                    <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No active loans to collect from.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {activeLoans.map((loan) => {
-                      const isOverdue = loan.next_payment_date && loan.next_payment_date <= new Date().toISOString().split('T')[0];
-                      return (
-                        <div key={loan.id} className={`border rounded-lg p-4 ${isOverdue ? 'border-destructive/30 bg-destructive/5' : ''}`}>
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-semibold">{loan.loan_number}</h3>
-                                {isOverdue && (
-                                  <Badge variant="destructive">Overdue</Badge>
-                                )}
-                                {loan.missed_payments > 0 && (
-                                  <Badge variant="outline" className="border-destructive/30 text-destructive">
-                                    {loan.missed_payments} missed
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <User className="h-4 w-4" />
-                                {loan.client?.full_name || 'Unknown'} • {loan.client?.phone}
-                              </div>
-                              <div className="flex flex-wrap gap-4 text-sm">
-                                <span>
-                                  <span className="font-medium">Balance:</span> {formatCurrency(loan.loan_balance)}
-                                </span>
-                                <span>
-                                  <span className="font-medium capitalize">{loan.repayment_frequency}:</span> {formatCurrency(loan.installment_amount)}
-                                </span>
-                                <span>
-                                  <span className="font-medium">Next:</span>{' '}
-                                  {loan.next_payment_date 
-                                    ? new Date(loan.next_payment_date).toLocaleDateString()
-                                    : 'N/A'}
-                                </span>
-                              </div>
-                            </div>
-                            <Button variant="outline" onClick={() => navigate('/payments')}>
-                              Record Payment
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
+
+        {/* Dialogs */}
+        <InquiryEditDialog
+          inquiry={editingInquiry}
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          onSave={handleSaveInquiry}
+        />
+
+        <LoanApplicationDialog
+          open={isApplicationOpen}
+          onOpenChange={setIsApplicationOpen}
+          inquiry={applicationInquiry}
+          userId={user?.id || ""}
+          onSuccess={() => {
+            fetchData();
+            setApplicationInquiry(null);
+          }}
+        />
+
+        <RecordPerformanceDialog
+          open={isPerformanceDialogOpen}
+          onOpenChange={setIsPerformanceDialogOpen}
+          department="credit_collection"
+          officers={officers}
+          userId={user?.id || ""}
+          onSuccess={fetchData}
+        />
+
+        {/* Contract Print Dialog */}
+        <Dialog open={isContractDialogOpen} onOpenChange={setIsContractDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Asset Financing Contract</DialogTitle>
+            </DialogHeader>
+            {contractData && contractData.loan.client && contractData.loan.asset && (
+              <>
+                <div ref={contractRef}>
+                  <LoanContract
+                    loan={contractData.loan}
+                    client={{
+                      full_name: contractData.loan.client.full_name,
+                      phone: contractData.loan.client.phone,
+                      national_id: contractData.loan.client.national_id,
+                      address: contractData.loan.client.address || '',
+                      district: contractData.loan.client.district,
+                      village: contractData.loan.client.village,
+                      next_of_kin_name: contractData.loan.client.next_of_kin_name,
+                      next_of_kin_phone: contractData.loan.client.next_of_kin_phone,
+                    }}
+                    asset={{
+                      asset_type: contractData.loan.asset.asset_type,
+                      brand: contractData.loan.asset.brand,
+                      model: contractData.loan.asset.model,
+                      chassis_number: contractData.loan.asset.chassis_number,
+                      engine_number: contractData.loan.asset.engine_number,
+                      registration_number: contractData.loan.asset.registration_number || undefined,
+                      color: contractData.loan.asset.color,
+                    }}
+                    approvedBy={contractData.approvedBy}
+                    approvedAt={contractData.approvedAt}
+                  />
+                </div>
+                <div className="flex justify-end gap-3 mt-4">
+                  <Button variant="outline" onClick={() => setIsContractDialogOpen(false)}>
+                    Close
+                  </Button>
+                  <Button onClick={handlePrintContract}>
+                    <Printer className="h-4 w-4 mr-2" />
+                    Print Contract
+                  </Button>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Edit Inquiry Dialog */}
-      <InquiryEditDialog
-        inquiry={editingInquiry}
-        open={isEditDialogOpen}
-        onOpenChange={(open) => {
-          setIsEditDialogOpen(open);
-          if (!open) setEditingInquiry(null);
-        }}
-        onSave={handleSaveInquiry}
-      />
-
-      {/* Loan Application Dialog */}
-      <LoanApplicationDialog
-        inquiry={applicationInquiry}
-        open={isApplicationOpen}
-        onOpenChange={(open) => {
-          setIsApplicationOpen(open);
-          if (!open) setApplicationInquiry(null);
-        }}
-        onSuccess={() => {
-          fetchData();
-        }}
-        userId={user?.id || ''}
-        userBranchId={profile?.branch_id}
-      />
-
-      {/* Contract Print Dialog */}
-      <Dialog open={isContractDialogOpen} onOpenChange={setIsContractDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Loan Contract - {contractData?.loan.loan_number}
-            </DialogTitle>
-          </DialogHeader>
-          
-          {contractData && contractData.loan.client && contractData.loan.asset && (
-            <div className="space-y-4">
-              <LoanContract
-                ref={contractRef}
-                loan={{
-                  loan_number: contractData.loan.loan_number,
-                  principal_amount: contractData.loan.principal_amount,
-                  total_amount: contractData.loan.total_amount,
-                  down_payment: contractData.loan.down_payment,
-                  loan_balance: contractData.loan.loan_balance,
-                  installment_amount: contractData.loan.installment_amount,
-                  total_installments: contractData.loan.total_installments,
-                  repayment_frequency: contractData.loan.repayment_frequency,
-                  interest_rate: contractData.loan.interest_rate,
-                  start_date: contractData.loan.start_date,
-                  end_date: contractData.loan.end_date,
-                }}
-                client={{
-                  full_name: contractData.loan.client.full_name,
-                  phone: contractData.loan.client.phone,
-                  national_id: contractData.loan.client.national_id,
-                  address: contractData.loan.client.address || '',
-                  district: contractData.loan.client.district,
-                  village: contractData.loan.client.village,
-                  next_of_kin_name: contractData.loan.client.next_of_kin_name,
-                  next_of_kin_phone: contractData.loan.client.next_of_kin_phone,
-                }}
-                asset={{
-                  asset_type: contractData.loan.asset.asset_type,
-                  brand: contractData.loan.asset.brand,
-                  model: contractData.loan.asset.model,
-                  chassis_number: contractData.loan.asset.chassis_number,
-                  engine_number: contractData.loan.asset.engine_number,
-                  registration_number: contractData.loan.asset.registration_number || undefined,
-                  color: contractData.loan.asset.color,
-                }}
-                approvedBy={contractData.approvedBy}
-                approvedAt={contractData.approvedAt}
-              />
-              
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setIsContractDialogOpen(false)}>
-                  Close
-                </Button>
-                <Button onClick={handlePrintContract}>
-                  <Printer className="h-4 w-4 mr-2" />
-                  Print Contract
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </DashboardLayout>
   );
 };

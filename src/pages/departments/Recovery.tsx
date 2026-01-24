@@ -26,8 +26,32 @@ import {
   Calendar,
   DollarSign,
   FileWarning,
-  CheckCircle
+  CheckCircle,
+  TrendingDown,
+  Users,
+  Target,
+  UserPlus,
+  Percent,
+  RefreshCw
 } from "lucide-react";
+import { DepartmentStatsCard } from "@/components/departments/DepartmentStatsCard";
+import { OfficerManagement } from "@/components/departments/OfficerManagement";
+import { RecordPerformanceDialog } from "@/components/departments/RecordPerformanceDialog";
+
+interface Officer {
+  id: string;
+  user_id: string;
+  full_name: string;
+  phone: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface DepartmentTarget {
+  target_value: number;
+  max_officers: number;
+  per_officer_target: number;
+}
 
 interface DefaultedLoan {
   id: string;
@@ -68,6 +92,8 @@ const formatCurrency = (amount: number) => {
 const Recovery = () => {
   const { user, loading: authLoading, hasAnyRole, isAdmin, roles } = useAuth();
   const navigate = useNavigate();
+  const [officers, setOfficers] = useState<Officer[]>([]);
+  const [target, setTarget] = useState<DepartmentTarget | null>(null);
   const [atRiskLoans, setAtRiskLoans] = useState<DefaultedLoan[]>([]);
   const [defaultedLoans, setDefaultedLoans] = useState<DefaultedLoan[]>([]);
   const [recoveredLoans, setRecoveredLoans] = useState<DefaultedLoan[]>([]);
@@ -75,12 +101,19 @@ const Recovery = () => {
   const [selectedLoan, setSelectedLoan] = useState<DefaultedLoan | null>(null);
   const [recoveryNotes, setRecoveryNotes] = useState("");
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
+  const [isPerformanceDialogOpen, setIsPerformanceDialogOpen] = useState(false);
+  const [performanceStats, setPerformanceStats] = useState({
+    recoveryRate: 0,
+    totalRecovered: 0,
+  });
   const [stats, setStats] = useState({
     atRisk: 0,
     defaulted: 0,
     recovered: 0,
     totalAtRisk: 0,
   });
+
+  const canManage = hasAnyRole(['super_admin', 'admin', 'recovery_admin']);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -90,13 +123,79 @@ const Recovery = () => {
 
   useEffect(() => {
     if (user && hasAnyRole(['super_admin', 'admin', 'recovery_admin', 'recovery_officer'])) {
-      fetchLoans();
+      fetchData();
     }
   }, [user, roles]);
 
+  const fetchData = async () => {
+    try {
+      await Promise.all([fetchOfficers(), fetchTarget(), fetchLoans(), fetchPerformance()]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchOfficers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("department_officers")
+        .select("*")
+        .eq("department", "recovery")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setOfficers(data || []);
+    } catch (error) {
+      console.error("Error fetching officers:", error);
+    }
+  };
+
+  const fetchTarget = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("department_targets")
+        .select("target_value, max_officers, per_officer_target")
+        .eq("department", "recovery")
+        .eq("is_active", true)
+        .single();
+
+      if (error && error.code !== "PGRST116") throw error;
+      setTarget(data);
+    } catch (error) {
+      console.error("Error fetching target:", error);
+    }
+  };
+
+  const fetchPerformance = async () => {
+    try {
+      const today = new Date();
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay());
+
+      const { data, error } = await supabase
+        .from("department_performance")
+        .select("recovery_rate, total_recovered_amount")
+        .eq("department", "recovery")
+        .gte("period_start", weekStart.toISOString().split("T")[0])
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setPerformanceStats({
+          recoveryRate: data[0].recovery_rate || 0,
+          totalRecovered: data[0].total_recovered_amount || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching performance:", error);
+    }
+  };
+
   const fetchLoans = async () => {
     try {
-      // Fetch at-risk loans (3+ consecutive missed payments)
       const { data: atRisk, error: atRiskError } = await supabase
         .from("loans")
         .select(`
@@ -113,7 +212,6 @@ const Recovery = () => {
 
       if (atRiskError) throw atRiskError;
 
-      // Fetch defaulted loans
       const { data: defaulted, error: defaultedError } = await supabase
         .from("loans")
         .select(`
@@ -129,7 +227,6 @@ const Recovery = () => {
 
       if (defaultedError) throw defaultedError;
 
-      // Fetch recovered loans
       const { data: recovered, error: recoveredError } = await supabase
         .from("loans")
         .select(`
@@ -162,8 +259,6 @@ const Recovery = () => {
     } catch (error) {
       console.error("Error fetching loans:", error);
       toast.error("Failed to load recovery data");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -195,7 +290,6 @@ const Recovery = () => {
 
   const handleMarkRecovered = async (loanId: string) => {
     try {
-      // Get the loan to find the asset
       const loan = defaultedLoans.find(l => l.id === loanId);
       
       const { error: loanError } = await supabase
@@ -205,13 +299,11 @@ const Recovery = () => {
 
       if (loanError) throw loanError;
 
-      // Make asset available again
       if (loan?.asset) {
-        const { error: assetError } = await supabase
+        await supabase
           .from("assets")
           .update({ status: 'recovered' })
           .eq("id", loanId);
-        // Note: This might fail if asset_id is different, but we continue anyway
       }
       
       toast.success("Loan marked as recovered - asset available for reassignment");
@@ -228,7 +320,7 @@ const Recovery = () => {
         <div className="space-y-6">
           <Skeleton className="h-8 w-64" />
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32" />)}
           </div>
           <Skeleton className="h-96" />
         </div>
@@ -249,10 +341,13 @@ const Recovery = () => {
     );
   }
 
+  const targetValue = target?.target_value || 95;
+  const isBelowTarget = performanceStats.recoveryRate < targetValue;
+
   const LoanCard = ({ loan, type }: { loan: DefaultedLoan; type: 'at-risk' | 'defaulted' | 'recovered' }) => (
     <div className={`border rounded-lg p-4 ${
       type === 'at-risk' ? 'border-warning/30 bg-warning/5' : 
-      type === 'defaulted' ? 'border-accent/30 bg-accent/5' : 
+      type === 'defaulted' ? 'border-destructive/30 bg-destructive/5' : 
       'border-success/30 bg-success/5'
     }`}>
       <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
@@ -314,7 +409,7 @@ const Recovery = () => {
         </div>
 
         <div className="flex gap-2">
-          {type === 'at-risk' && isAdmin() && (
+          {type === 'at-risk' && canManage && (
             <Button 
               variant="destructive" 
               size="sm"
@@ -327,7 +422,7 @@ const Recovery = () => {
               Initiate Recovery
             </Button>
           )}
-          {type === 'defaulted' && isAdmin() && (
+          {type === 'defaulted' && canManage && (
             <Button 
               variant="default" 
               size="sm"
@@ -348,56 +443,75 @@ const Recovery = () => {
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Recovery Department</h1>
-          <p className="text-muted-foreground">Manage defaulted loans and asset recovery</p>
+          <p className="text-muted-foreground">Manage recovery officers and track collection rates</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-warning/10">
-                <Clock className="h-6 w-6 text-warning" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">At Risk</p>
-                <p className="text-2xl font-bold text-foreground">{stats.atRisk}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-accent/10">
-                <AlertTriangle className="h-6 w-6 text-accent" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Defaulted</p>
-                <p className="text-2xl font-bold text-foreground">{stats.defaulted}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-success/10">
-                <Shield className="h-6 w-6 text-success" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Recovered</p>
-                <p className="text-2xl font-bold text-foreground">{stats.recovered}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-accent/10">
-                <DollarSign className="h-6 w-6 text-accent" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total At Risk</p>
-                <p className="text-xl font-bold text-foreground">{formatCurrency(stats.totalAtRisk)}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <DepartmentStatsCard
+            title="Recovery Rate"
+            value={`${performanceStats.recoveryRate.toFixed(1)}%`}
+            target={targetValue}
+            showProgress
+            subtitle={`Target: ${targetValue}%`}
+            icon={TrendingDown}
+            iconBgColor="bg-warning/10"
+            valueColor={isBelowTarget ? "text-destructive" : "text-success"}
+            isBelowTarget={isBelowTarget}
+          />
+          <DepartmentStatsCard
+            title="Total Recovered"
+            value={formatCurrency(performanceStats.totalRecovered)}
+            subtitle="This week"
+            icon={DollarSign}
+            iconBgColor="bg-success/10"
+            valueColor="text-foreground"
+          />
+          <DepartmentStatsCard
+            title="Recovery Officers"
+            value={officers.length}
+            subtitle=""
+            icon={Users}
+            iconBgColor="bg-success/10"
+            valueColor="text-foreground"
+          />
+          <DepartmentStatsCard
+            title="Target"
+            value={`${targetValue}%`}
+            subtitle="Weekly recovery target"
+            icon={Target}
+            iconBgColor="bg-success/10"
+            valueColor="text-success"
+          />
         </div>
+
+        {/* Action Buttons */}
+        {canManage && (
+          <div className="flex gap-3">
+            <Button className="bg-primary hover:bg-primary/90">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Recovery Officer
+            </Button>
+            <Button 
+              variant="outline" 
+              className="border-success text-success hover:bg-success/10"
+              onClick={() => setIsPerformanceDialogOpen(true)}
+            >
+              <Percent className="h-4 w-4 mr-2" />
+              Record Performance
+            </Button>
+          </div>
+        )}
+
+        {/* Officers List */}
+        <OfficerManagement
+          department="recovery"
+          officers={officers}
+          maxOfficers={target?.max_officers || 4}
+          canManage={canManage}
+          onRefresh={fetchOfficers}
+          userId={user?.id || ""}
+        />
 
         {/* At Risk Loans */}
         <Card>
@@ -427,7 +541,7 @@ const Recovery = () => {
         {/* Defaulted Loans */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-accent">
+            <CardTitle className="flex items-center gap-2 text-destructive">
               <FileWarning className="h-5 w-5" />
               Defaulted Loans - Pending Recovery
             </CardTitle>
@@ -453,10 +567,10 @@ const Recovery = () => {
         {recoveredLoans.length > 0 && (
           <Card>
             <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-success">
-              <Shield className="h-5 w-5" />
-              Recently Recovered
-            </CardTitle>
+              <CardTitle className="flex items-center gap-2 text-success">
+                <Shield className="h-5 w-5" />
+                Recently Recovered
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -494,11 +608,22 @@ const Recovery = () => {
                 Cancel
               </Button>
               <Button variant="destructive" onClick={handleInitiateRecovery}>
-                Confirm Recovery
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Initiate Recovery
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Performance Dialog */}
+        <RecordPerformanceDialog
+          open={isPerformanceDialogOpen}
+          onOpenChange={setIsPerformanceDialogOpen}
+          department="recovery"
+          officers={officers}
+          userId={user?.id || ""}
+          onSuccess={fetchData}
+        />
       </div>
     </DashboardLayout>
   );
