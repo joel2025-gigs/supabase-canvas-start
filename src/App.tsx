@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
+import OfficerLogin from "./pages/auth/OfficerLogin";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Assets from "./pages/Assets";
@@ -51,6 +52,7 @@ const App = () => (
           {/* Staff authentication */}
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/signup" element={<Signup />} />
+          <Route path="/auth/officer" element={<OfficerLogin />} />
           
           {/* Staff dashboard routes */}
           <Route path="/dashboard" element={<Dashboard />} />
