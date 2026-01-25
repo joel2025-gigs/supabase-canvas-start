@@ -322,8 +322,8 @@ const Sales = () => {
                   <InquiryCard
                     key={inquiry.id}
                     inquiry={inquiry}
-                    onEdit={handleEditInquiry}
-                    onUpdateStatus={handleUpdateStatus}
+                    onEdit={canManage ? handleEditInquiry : undefined}
+                    onUpdateStatus={canManage ? handleUpdateStatus : undefined}
                   />
                 ))}
               </div>
