@@ -88,26 +88,68 @@ export const OfficerManagement = ({
   const config = departmentConfig[department];
   const Icon = config.icon;
 
+  const formatPhoneNumber = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.startsWith("0")) {
+      return "256" + digits.slice(1);
+    }
+    if (!digits.startsWith("256") && digits.length > 0) {
+      return "256" + digits;
+    }
+    return digits;
+  };
+
   const handleAddOfficer = async () => {
     if (!formData.phone || !formData.full_name) {
       toast.error("Please fill in all fields");
       return;
     }
 
+    const formattedPhone = formatPhoneNumber(formData.phone);
+    
+    if (formattedPhone.length < 12) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
+
     setIsLoading(true);
     try {
+      // Check if phone already exists
+      const { data: existing } = await supabase
+        .from("department_officers")
+        .select("id")
+        .eq("phone", formattedPhone)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (existing) {
+        toast.error("An officer with this phone number already exists");
+        setIsLoading(false);
+        return;
+      }
+
       // Create officer record without user_id - will be linked when they sign in with OTP
       const { error } = await supabase.from("department_officers").insert({
         department,
-        phone: formData.phone,
+        phone: formattedPhone,
         full_name: formData.full_name,
         added_by: userId,
-        user_id: null,
-      } as any);
+      });
 
       if (error) throw error;
 
-      toast.success(`${config.roleLabel} added successfully`);
+      // Generate login link
+      const loginLink = `${window.location.origin}/auth/officer?phone=${formattedPhone}&department=${department}`;
+      
+      toast.success(
+        <div className="space-y-2">
+          <p>{config.roleLabel} added successfully!</p>
+          <p className="text-xs">Share this login link with them:</p>
+          <code className="text-xs bg-muted p-1 rounded block break-all">{loginLink}</code>
+        </div>,
+        { duration: 10000 }
+      );
+      
       setIsDialogOpen(false);
       setFormData({ full_name: "", phone: "" });
       onRefresh();
