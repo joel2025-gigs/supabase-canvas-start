@@ -102,7 +102,8 @@ export const OfficerManagement = ({
         phone: formData.phone,
         full_name: formData.full_name,
         added_by: userId,
-      });
+        user_id: null,
+      } as any);
 
       if (error) throw error;
 

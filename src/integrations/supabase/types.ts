@@ -301,7 +301,7 @@ export type Database = {
           is_active: boolean
           phone: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           added_by?: string | null
@@ -312,7 +312,7 @@ export type Database = {
           is_active?: boolean
           phone: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           added_by?: string | null
@@ -323,7 +323,7 @@ export type Database = {
           is_active?: boolean
           phone?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
