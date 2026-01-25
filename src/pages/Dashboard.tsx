@@ -962,8 +962,8 @@ const Dashboard = () => {
     return <AdminDashboard />;
   }
 
-  // Department admins and operations staff get field officer style dashboard
-  if (hasAnyRole(['operations_admin', 'sales_admin', 'credit_admin', 'recovery_admin', 'sales_officer', 'credit_officer', 'recovery_officer', 'operations_officer'])) {
+  // Department admins, officers, and generic staff get staff dashboard
+  if (hasAnyRole(['operations_admin', 'sales_admin', 'credit_admin', 'recovery_admin', 'sales_officer', 'credit_officer', 'recovery_officer', 'operations_officer', 'staff'])) {
     return <FieldOfficerDashboard />;
   }
 
@@ -971,7 +971,7 @@ const Dashboard = () => {
     return <AccountantDashboard />;
   }
 
-  // Staff and any other roles get client-style dashboard
+  // Only clients get the client dashboard
   return <ClientDashboard />;
 };
 
