@@ -408,31 +408,33 @@ const Recovery = () => {
           )}
         </div>
 
-        <div className="flex gap-2">
-          {type === 'at-risk' && canManage && (
-            <Button 
-              variant="destructive" 
-              size="sm"
-              onClick={() => {
-                setSelectedLoan(loan);
-                setShowRecoveryDialog(true);
-              }}
-            >
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              Initiate Recovery
-            </Button>
-          )}
-          {type === 'defaulted' && canManage && (
-            <Button 
-              variant="default" 
-              size="sm"
-              onClick={() => handleMarkRecovered(loan.id)}
-            >
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Mark Recovered
-            </Button>
-          )}
-        </div>
+        {canManage && (
+          <div className="flex gap-2">
+            {type === 'at-risk' && (
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={() => {
+                  setSelectedLoan(loan);
+                  setShowRecoveryDialog(true);
+                }}
+              >
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Initiate Recovery
+              </Button>
+            )}
+            {type === 'defaulted' && (
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={() => handleMarkRecovered(loan.id)}
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Mark Recovered
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -612,10 +612,10 @@ const CreditCollection = () => {
                       <InquiryCard
                         key={inquiry.id}
                         inquiry={inquiry}
-                        onEdit={handleEditInquiry}
-                        onUpdateStatus={handleUpdateStatus}
-                        showApplicationButton
-                        onStartApplication={handleStartApplication}
+                        onEdit={canManage ? handleEditInquiry : undefined}
+                        onUpdateStatus={canManage ? handleUpdateStatus : undefined}
+                        showApplicationButton={canManage}
+                        onStartApplication={canManage ? handleStartApplication : undefined}
                       />
                     ))}
                   </div>
@@ -646,36 +646,38 @@ const CreditCollection = () => {
                         key={loan.id}
                         loan={loan}
                         actions={
-                          <>
-                            {loan.status === 'pending' && (
-                              <Button size="sm" onClick={() => handleStartReview(loan.id)}>
-                                <ArrowRight className="h-4 w-4 mr-2" />
-                                Start Review
-                              </Button>
-                            )}
-                            {loan.status === 'under_review' && (
-                              <>
-                                {loan.asset ? (
-                                  <Button 
-                                    size="sm" 
-                                    className="bg-success hover:bg-success/90"
-                                    onClick={() => {
-                                      supabase.from("loans").update({ status: 'awaiting_approval' }).eq("id", loan.id)
-                                        .then(() => { toast.success("Moved to final approval"); fetchData(); });
-                                    }}
-                                  >
-                                    <CheckCircle className="h-4 w-4 mr-2" />
-                                    Ready for Approval
-                                  </Button>
-                                ) : (
-                                  <Button size="sm" variant="outline" onClick={() => handleSendToOperations(loan.id)}>
-                                    <Send className="h-4 w-4 mr-2" />
-                                    Send to Operations
-                                  </Button>
-                                )}
-                              </>
-                            )}
-                          </>
+                          canManage && (
+                            <>
+                              {loan.status === 'pending' && (
+                                <Button size="sm" onClick={() => handleStartReview(loan.id)}>
+                                  <ArrowRight className="h-4 w-4 mr-2" />
+                                  Start Review
+                                </Button>
+                              )}
+                              {loan.status === 'under_review' && (
+                                <>
+                                  {loan.asset ? (
+                                    <Button 
+                                      size="sm" 
+                                      className="bg-success hover:bg-success/90"
+                                      onClick={() => {
+                                        supabase.from("loans").update({ status: 'awaiting_approval' }).eq("id", loan.id)
+                                          .then(() => { toast.success("Moved to final approval"); fetchData(); });
+                                      }}
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-2" />
+                                      Ready for Approval
+                                    </Button>
+                                  ) : (
+                                    <Button size="sm" variant="outline" onClick={() => handleSendToOperations(loan.id)}>
+                                      <Send className="h-4 w-4 mr-2" />
+                                      Send to Operations
+                                    </Button>
+                                  )}
+                                </>
+                              )}
+                            </>
+                          )
                         }
                       />
                     ))}

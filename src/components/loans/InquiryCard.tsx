@@ -19,7 +19,7 @@ interface InquiryWithDetails {
 
 interface InquiryCardProps {
   inquiry: InquiryWithDetails;
-  onEdit: (inquiry: InquiryWithDetails) => void;
+  onEdit?: (inquiry: InquiryWithDetails) => void;
   onStartApplication?: (inquiry: InquiryWithDetails) => void;
   onUpdateStatus?: (id: string, status: string) => void;
   showApplicationButton?: boolean;
@@ -99,10 +99,12 @@ export const InquiryCard = ({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => onEdit(inquiry)}>
-            <Edit className="h-4 w-4 mr-1" />
-            Edit
-          </Button>
+          {onEdit && (
+            <Button variant="outline" size="sm" onClick={() => onEdit(inquiry)}>
+              <Edit className="h-4 w-4 mr-1" />
+              Edit
+            </Button>
+          )}
           {showApplicationButton && inquiry.status === "qualified" && onStartApplication && (
             <Button size="sm" onClick={() => onStartApplication(inquiry)}>
               <FileText className="h-4 w-4 mr-1" />
