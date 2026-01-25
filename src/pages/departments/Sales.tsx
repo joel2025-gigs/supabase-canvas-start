@@ -278,16 +278,9 @@ const Sales = () => {
           />
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Button */}
         {canManage && (
           <div className="flex gap-3">
-            <Button 
-              className="bg-primary hover:bg-primary/90"
-              onClick={() => setIsPerformanceDialogOpen(true)}
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add Sales Officer
-            </Button>
             <Button 
               variant="outline" 
               className="border-success text-success hover:bg-success/10"
