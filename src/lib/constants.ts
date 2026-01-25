@@ -16,11 +16,13 @@ export const REPAYMENT_FREQUENCIES = {
 
 // User roles with labels - Simplified structure
 export const USER_ROLES = {
-  super_admin: { label: "Super Admin", description: "Full system access" },
-  admin: { label: "Admin", description: "OPERATIONS + LOANS access, no ADMIN section" },
-  operations_admin: { label: "Operations Admin", description: "Edit OPERATIONS, view-only LOANS" },
-  accountant: { label: "Accountant", description: "View-only, can download reports" },
-  staff: { label: "Staff", description: "Department-specific access" },
+  super_admin: { label: "Super Admin", description: "Full system access - System Admin & CEO" },
+  admin: { label: "Admin", description: "Edit LOANS, view everything else - Company performance" },
+  operations_admin: { label: "Operations Admin", description: "Edit OPERATIONS, view LOANS" },
+  accountant: { label: "Finance", description: "Edit Payments, accounting & payment integrations" },
+  sales_admin: { label: "Sales Executive", description: "Lead management and sales pipeline" },
+  credit_admin: { label: "Credit Admin", description: "Loan approvals and credit decisions" },
+  recovery_admin: { label: "Recovery Admin", description: "Default management and asset recovery" },
 } as const;
 
 // Department definitions

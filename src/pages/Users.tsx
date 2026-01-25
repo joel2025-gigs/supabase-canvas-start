@@ -66,7 +66,7 @@ const userSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
   full_name: z.string().min(2, "Name is required"),
   phone: z.string().optional(),
-  role: z.enum(["super_admin", "admin", "operations_admin", "accountant", "staff"]),
+  role: z.enum(["super_admin", "admin", "operations_admin", "accountant", "sales_admin", "credit_admin", "recovery_admin"]),
   branch_id: z.string().optional(),
   department: z.string().optional(),
 });
@@ -74,7 +74,7 @@ const userSchema = z.object({
 const editUserSchema = z.object({
   full_name: z.string().min(2, "Name is required"),
   phone: z.string().optional(),
-  role: z.enum(["super_admin", "admin", "operations_admin", "accountant", "staff"]),
+  role: z.enum(["super_admin", "admin", "operations_admin", "accountant", "sales_admin", "credit_admin", "recovery_admin"]),
   branch_id: z.string().optional(),
   department: z.string().optional(),
   is_active: z.boolean(),
@@ -114,7 +114,7 @@ const Users = () => {
     password: "",
     full_name: "",
     phone: "",
-    role: "staff" as AppRole,
+    role: "sales_admin" as AppRole,
     branch_id: "",
     department: "" as string,
   });
@@ -122,7 +122,7 @@ const Users = () => {
   const [editFormData, setEditFormData] = useState({
     full_name: "",
     phone: "",
-    role: "staff" as AppRole,
+    role: "sales_admin" as AppRole,
     branch_id: "",
     department: "" as string,
     is_active: true,
@@ -193,7 +193,7 @@ const Users = () => {
       password: "",
       full_name: "",
       phone: "",
-      role: "staff",
+      role: "sales_admin",
       branch_id: "",
       department: "",
     });
@@ -204,7 +204,7 @@ const Users = () => {
     setEditFormData({
       full_name: "",
       phone: "",
-      role: "staff",
+      role: "sales_admin",
       branch_id: "",
       department: "",
       is_active: true,
@@ -298,7 +298,7 @@ const Users = () => {
     setEditFormData({
       full_name: userToEdit.full_name,
       phone: userToEdit.phone || "",
-      role: userToEdit.roles[0] || "staff",
+      role: userToEdit.roles[0] || "sales_admin",
       branch_id: userToEdit.branch_id || "",
       department: userToEdit.department || "",
       is_active: userToEdit.is_active,

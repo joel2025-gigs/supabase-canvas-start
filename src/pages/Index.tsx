@@ -179,6 +179,39 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Partners Section */}
+      <section className="py-16 lg:py-24 bg-background">
+        <div className="section-container">
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+              Our <span className="text-primary">Partners</span>
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              We collaborate with leading financial institutions and motorcycle manufacturers 
+              to bring you the best products and financing options.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 items-center justify-items-center">
+            {[
+              { name: "Bajaj", type: "Manufacturer" },
+              { name: "Haojue", type: "Manufacturer" },
+              { name: "Honda", type: "Manufacturer" },
+              { name: "ZongZhen", type: "Manufacturer" },
+              { name: "Stanbic Bank", type: "Finance Partner" },
+              { name: "Centenary Bank", type: "Finance Partner" },
+            ].map((partner, index) => (
+              <Card key={index} className="w-full h-24 flex items-center justify-center shadow-card hover:shadow-elegant transition-all">
+                <CardContent className="p-4 text-center">
+                  <div className="font-semibold text-primary">{partner.name}</div>
+                  <div className="text-xs text-muted-foreground">{partner.type}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );

@@ -68,8 +68,8 @@ const Contact = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold">Phone</h3>
-                        <p className="text-muted-foreground">+256 700 123 456</p>
-                        <p className="text-muted-foreground">+256 414 123 456</p>
+                        <p className="text-muted-foreground">+256 200 911 380</p>
+                        <p className="text-muted-foreground">info@nawap.net</p>
                       </div>
                     </CardContent>
                   </Card>
