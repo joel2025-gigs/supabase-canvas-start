@@ -96,9 +96,8 @@ export const OfficerManagement = ({
 
     setIsLoading(true);
     try {
-      // Create officer record (user will be created when they sign in with OTP)
+      // Create officer record without user_id - will be linked when they sign in with OTP
       const { error } = await supabase.from("department_officers").insert({
-        user_id: crypto.randomUUID(), // Temporary placeholder
         department,
         phone: formData.phone,
         full_name: formData.full_name,
@@ -146,6 +145,17 @@ export const OfficerManagement = ({
             <Icon className="h-5 w-5" />
             {config.title} ({activeOfficers.length}/{maxOfficers})
           </CardTitle>
+          {canManage && (
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              disabled={activeOfficers.length >= maxOfficers}
+              size="sm"
+              className="bg-primary hover:bg-primary/90"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              {config.addLabel}
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {activeOfficers.length === 0 ? (
@@ -239,20 +249,6 @@ export const OfficerManagement = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Action Buttons */}
-      {canManage && (
-        <div className="flex gap-3 mt-4">
-          <Button
-            onClick={() => setIsDialogOpen(true)}
-            disabled={activeOfficers.length >= maxOfficers}
-            className="bg-primary hover:bg-primary/90"
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            {config.addLabel}
-          </Button>
-        </div>
-      )}
     </>
   );
 };
