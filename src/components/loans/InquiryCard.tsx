@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Phone, Mail, MapPin, Briefcase, Edit, FileText } from "lucide-react";
+import { Phone, Mail, MapPin, Briefcase, Edit, FileText, Banknote, CreditCard } from "lucide-react";
 
 interface InquiryWithDetails {
   id: string;
@@ -15,6 +15,7 @@ interface InquiryWithDetails {
   status: string;
   notes: string | null;
   created_at: string;
+  sale_type: string | null;
 }
 
 interface InquiryCardProps {
@@ -22,6 +23,8 @@ interface InquiryCardProps {
   onEdit?: (inquiry: InquiryWithDetails) => void;
   onStartApplication?: (inquiry: InquiryWithDetails) => void;
   onUpdateStatus?: (id: string, status: string) => void;
+  onSendToOperations?: (inquiry: InquiryWithDetails) => void;
+  onSendToCredit?: (inquiry: InquiryWithDetails) => void;
   showApplicationButton?: boolean;
 }
 
@@ -47,8 +50,11 @@ export const InquiryCard = ({
   onEdit,
   onStartApplication,
   onUpdateStatus,
+  onSendToOperations,
+  onSendToCredit,
   showApplicationButton = false,
 }: InquiryCardProps) => {
+  const isCashSale = inquiry.sale_type === "cash";
   return (
     <div className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -56,6 +62,12 @@ export const InquiryCard = ({
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-semibold">{inquiry.full_name}</h3>
             <Badge className={getStatusColor(inquiry.status)}>{inquiry.status}</Badge>
+            {inquiry.sale_type && (
+              <Badge variant="outline" className={isCashSale ? "border-success text-success" : "border-primary text-primary"}>
+                {isCashSale ? <Banknote className="h-3 w-3 mr-1" /> : <CreditCard className="h-3 w-3 mr-1" />}
+                {isCashSale ? "Cash" : "Loan"}
+              </Badge>
+            )}
           </div>
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
@@ -121,7 +133,20 @@ export const InquiryCard = ({
               Mark Qualified
             </Button>
           )}
-          {onUpdateStatus && inquiry.status === "qualified" && !showApplicationButton && (
+          {/* Cash sales: Send to Operations for asset assignment */}
+          {inquiry.status === "qualified" && isCashSale && onSendToOperations && (
+            <Button size="sm" onClick={() => onSendToOperations(inquiry)}>
+              Send to Operations
+            </Button>
+          )}
+          {/* Loan sales: Send to Credit for loan processing */}
+          {inquiry.status === "qualified" && !isCashSale && onSendToCredit && (
+            <Button size="sm" onClick={() => onSendToCredit(inquiry)}>
+              Send to Credit
+            </Button>
+          )}
+          {/* Legacy convert button for non-workflow scenarios */}
+          {onUpdateStatus && inquiry.status === "qualified" && !showApplicationButton && !onSendToOperations && !onSendToCredit && (
             <Button size="sm" onClick={() => onUpdateStatus(inquiry.id, "converted")}>
               Convert to Client
             </Button>

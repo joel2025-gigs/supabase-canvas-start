@@ -176,6 +176,48 @@ const Sales = () => {
     }
   };
 
+  const handleSendToOperations = async (inquiry: InquiryWithDetails) => {
+    try {
+      // For cash sales, mark as converted and ready for Operations
+      const { error } = await supabase
+        .from("inquiries")
+        .update({ 
+          status: "converted",
+          notes: `${inquiry.notes || ""}\n[${new Date().toLocaleDateString()}] Cash sale - Sent to Operations for asset assignment`.trim()
+        })
+        .eq("id", inquiry.id);
+
+      if (error) throw error;
+      
+      toast.success("Cash sale sent to Operations for asset assignment");
+      fetchInquiries();
+    } catch (error) {
+      console.error("Error sending to operations:", error);
+      toast.error("Failed to send to operations");
+    }
+  };
+
+  const handleSendToCredit = async (inquiry: InquiryWithDetails) => {
+    try {
+      // For loan sales, mark as qualified and ready for Credit department
+      const { error } = await supabase
+        .from("inquiries")
+        .update({ 
+          status: "converted",
+          notes: `${inquiry.notes || ""}\n[${new Date().toLocaleDateString()}] Loan sale - Sent to Credit for loan processing`.trim()
+        })
+        .eq("id", inquiry.id);
+
+      if (error) throw error;
+      
+      toast.success("Loan application sent to Credit department");
+      fetchInquiries();
+    } catch (error) {
+      console.error("Error sending to credit:", error);
+      toast.error("Failed to send to credit");
+    }
+  };
+
   const handleEditInquiry = (inquiry: InquiryWithDetails) => {
     setEditingInquiry(inquiry);
     setIsEditDialogOpen(true);
@@ -324,6 +366,8 @@ const Sales = () => {
                     inquiry={inquiry}
                     onEdit={canManage ? handleEditInquiry : undefined}
                     onUpdateStatus={canManage ? handleUpdateStatus : undefined}
+                    onSendToOperations={canManage ? handleSendToOperations : undefined}
+                    onSendToCredit={canManage ? handleSendToCredit : undefined}
                   />
                 ))}
               </div>
