@@ -29,6 +29,7 @@ const inquirySchema = z.object({
   product_interest: z.string().optional(),
   monthly_income: z.string().optional(),
   message: z.string().trim().max(500, "Message is too long").optional(),
+  sale_type: z.enum(["cash", "loan"]),
 });
 
 const GetStarted = () => {
@@ -47,6 +48,7 @@ const GetStarted = () => {
     product_interest: "",
     monthly_income: "",
     message: "",
+    sale_type: "loan" as "cash" | "loan",
   });
 
   // Pre-fill product from URL query param
@@ -93,6 +95,7 @@ const GetStarted = () => {
         product_interest: formData.product_interest || null,
         monthly_income: formData.monthly_income || null,
         message: formData.message.trim() || null,
+        sale_type: formData.sale_type,
       });
 
       if (error) throw error;
@@ -223,6 +226,43 @@ const GetStarted = () => {
                         onChange={(e) => handleChange("occupation", e.target.value)}
                         placeholder="e.g. Boda Boda Rider, Business Owner"
                       />
+                    </div>
+                  </div>
+
+                  {/* Purchase Type */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                      How would you like to purchase?
+                    </h3>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => handleChange("sale_type", "cash")}
+                        className={`p-4 rounded-lg border-2 text-left transition-all ${
+                          formData.sale_type === "cash"
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <div className="font-semibold">Cash Purchase</div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Pay full amount upfront
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleChange("sale_type", "loan")}
+                        className={`p-4 rounded-lg border-2 text-left transition-all ${
+                          formData.sale_type === "loan"
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <div className="font-semibold">Loan Financing</div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Pay in installments over time
+                        </p>
+                      </button>
                     </div>
                   </div>
 
