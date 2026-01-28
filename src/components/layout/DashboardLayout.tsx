@@ -87,13 +87,6 @@ const navItems: NavItem[] = [
   },
   // Operations
   {
-    label: "Operations Dept",
-    href: "/departments/operations",
-    icon: <Briefcase className="h-5 w-5" />,
-    roles: ["super_admin", "admin", "operations_admin", "operations_officer"],
-    section: "Operations",
-  },
-  {
     label: "Products",
     href: "/product-management",
     icon: <Package className="h-5 w-5" />,
