@@ -38,13 +38,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Plus, Search, Phone, MapPin, User, Loader2, Edit, Eye, Bike, Navigation } from "lucide-react";
+import { Plus, Search, Phone, MapPin, User, Loader2, Edit, Eye, Bike, Navigation, Banknote, CheckCircle, Package } from "lucide-react";
 import { DISTRICTS } from "@/lib/constants";
 import type { Client, Branch, Asset } from "@/lib/types";
 import { z } from "zod";
+
+interface CashSaleInquiry {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  district: string | null;
+  occupation: string | null;
+  product_interest: string | null;
+  notes: string | null;
+  created_at: string;
+}
 
 const clientSchema = z.object({
   full_name: z.string().min(2, "Name must be at least 2 characters"),
@@ -63,19 +76,24 @@ const clientSchema = z.object({
 
 const Clients = () => {
   const [clients, setClients] = useState<Client[]>([]);
+  const [cashSales, setCashSales] = useState<CashSaleInquiry[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState("registered");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [assigningAsset, setAssigningAsset] = useState<string | null>(null);
   
-  const { user, profile, isAuthenticated, loading: authLoading, isStaff, roles } = useAuth();
+  const { user, profile, isAuthenticated, loading: authLoading, isStaff, hasAnyRole, roles } = useAuth();
   const { isOnline, addToSyncQueue, saveLocally } = useOfflineSync();
   const navigate = useNavigate();
+
+  const canManage = hasAnyRole(['super_admin', 'admin', 'operations_admin']);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -105,12 +123,29 @@ const Clients = () => {
   useEffect(() => {
     if (isAuthenticated && isStaff()) {
       fetchClients();
+      fetchCashSales();
       fetchBranches();
       fetchAvailableAssets();
     } else if (isAuthenticated && !authLoading) {
       setLoading(false);
     }
   }, [isAuthenticated, authLoading, roles]);
+
+  const fetchCashSales = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("inquiries")
+        .select("*")
+        .eq("sale_type", "cash")
+        .eq("status", "converted")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setCashSales(data || []);
+    } catch (error) {
+      console.error("Error fetching cash sales:", error);
+    }
+  };
 
   const fetchAvailableAssets = async () => {
     const { data } = await supabase
@@ -307,6 +342,76 @@ const Clients = () => {
     const matchesDistrict = selectedDistrict === "all" || client.district === selectedDistrict;
     return matchesSearch && matchesDistrict;
   });
+
+  const filteredCashSales = cashSales.filter((sale) => {
+    const matchesSearch =
+      sale.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sale.phone.includes(searchTerm);
+    const matchesDistrict = selectedDistrict === "all" || sale.district === selectedDistrict;
+    return matchesSearch && matchesDistrict;
+  });
+
+  const handleAssignAsset = async (inquiry: CashSaleInquiry, assetId: string) => {
+    if (!canManage) {
+      toast.error("You don't have permission to assign assets");
+      return;
+    }
+    
+    setAssigningAsset(inquiry.id);
+    try {
+      // Get asset details
+      const { data: asset, error: assetError } = await supabase
+        .from("assets")
+        .select("*")
+        .eq("id", assetId)
+        .single();
+
+      if (assetError || !asset) throw new Error("Asset not found");
+
+      // Create client from inquiry
+      const clientData = {
+        full_name: inquiry.full_name,
+        phone: inquiry.phone,
+        address: inquiry.district || "N/A",
+        district: inquiry.district || "Kampala",
+        occupation: inquiry.occupation || null,
+        asset_id: assetId,
+        branch_id: profile?.branch_id || branches[0]?.id,
+        registered_by: user?.id,
+      };
+
+      const { error: clientError } = await supabase
+        .from("clients")
+        .insert(clientData);
+
+      if (clientError) throw clientError;
+
+      // Mark asset as assigned
+      await supabase
+        .from("assets")
+        .update({ status: "assigned" })
+        .eq("id", assetId);
+
+      // Update inquiry status to closed
+      await supabase
+        .from("inquiries")
+        .update({ 
+          status: "closed",
+          notes: `${inquiry.notes || ""}\n[${new Date().toLocaleDateString()}] Asset assigned - Cash sale completed`.trim()
+        })
+        .eq("id", inquiry.id);
+
+      toast.success("Asset assigned successfully! Client created.");
+      fetchCashSales();
+      fetchClients();
+      fetchAvailableAssets();
+    } catch (error: any) {
+      console.error("Error assigning asset:", error);
+      toast.error(error.message || "Failed to assign asset");
+    } finally {
+      setAssigningAsset(null);
+    }
+  };
 
   if (authLoading || loading) {
     return (
@@ -579,90 +684,203 @@ const Clients = () => {
           </CardContent>
         </Card>
 
-        {/* Clients Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Registered Clients</CardTitle>
-            <CardDescription>{filteredClients.length} clients found</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Asset</TableHead>
-                    <TableHead>District</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredClients.map((client) => (
-                    <TableRow key={client.id}>
-                      <TableCell>
-                        <div className="font-medium">{client.full_name}</div>
-                        {client.national_id && (
-                          <div className="text-sm text-muted-foreground">ID: {client.national_id}</div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {client.phone}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {client.asset ? (
-                          <div className="flex flex-col">
-                            <span className="font-medium text-primary flex items-center gap-1">
-                              <Bike className="h-3 w-3" />
-                              {client.asset.brand} {client.asset.model}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {client.asset.registration_number || client.asset.chassis_number}
-                            </span>
+        {/* Tabs for Clients */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="registered" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Registered Clients
+              <Badge variant="secondary" className="ml-1">{filteredClients.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="pending" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Pending Assignment
+              <Badge variant="secondary" className="ml-1 bg-warning/20 text-warning">{filteredCashSales.length}</Badge>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Registered Clients Tab */}
+          <TabsContent value="registered">
+            <Card>
+              <CardHeader>
+                <CardTitle>Registered Clients</CardTitle>
+                <CardDescription>{filteredClients.length} clients found</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Asset</TableHead>
+                        <TableHead>District</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredClients.map((client) => (
+                        <TableRow key={client.id}>
+                          <TableCell>
+                            <div className="font-medium">{client.full_name}</div>
+                            {client.national_id && (
+                              <div className="text-sm text-muted-foreground">ID: {client.national_id}</div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {client.phone}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {client.asset ? (
+                              <div className="flex flex-col">
+                                <span className="font-medium text-primary flex items-center gap-1">
+                                  <Bike className="h-3 w-3" />
+                                  {client.asset.brand} {client.asset.model}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {client.asset.registration_number || client.asset.chassis_number}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {client.district}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={client.is_active ? "default" : "secondary"}>
+                              {client.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(client)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {filteredClients.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                            No clients found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Pending Assignment (Cash Sales) Tab */}
+          <TabsContent value="pending">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Banknote className="h-5 w-5 text-success" />
+                  Cash Sales - Pending Asset Assignment
+                </CardTitle>
+                <CardDescription>
+                  Qualified cash sale leads awaiting asset assignment
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {filteredCashSales.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No cash sales pending asset assignment.</p>
+                    <p className="text-sm text-muted-foreground mt-1">When Sales sends cash sales, they'll appear here for processing.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredCashSales.map((sale) => (
+                      <div key={sale.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-semibold">{sale.full_name}</h3>
+                              <Badge className="bg-success text-success-foreground">
+                                <Banknote className="h-3 w-3 mr-1" />
+                                Cash Sale
+                              </Badge>
+                            </div>
+                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-4 w-4" />
+                                {sale.phone}
+                              </span>
+                              {sale.district && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-4 w-4" />
+                                  {sale.district}
+                                </span>
+                              )}
+                            </div>
+                            {sale.product_interest && (
+                              <p className="text-sm">
+                                <span className="font-medium">Product:</span> {sale.product_interest}
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              Received: {new Date(sale.created_at).toLocaleDateString()}
+                            </p>
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {client.district}
+                          <div className="flex items-center gap-2">
+                            {canManage && assets.length > 0 && (
+                              <Select 
+                                onValueChange={(assetId) => handleAssignAsset(sale, assetId)}
+                                disabled={assigningAsset === sale.id}
+                              >
+                                <SelectTrigger className="w-[200px]">
+                                  <SelectValue placeholder="Assign Asset" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {assets.map((asset) => (
+                                    <SelectItem key={asset.id} value={asset.id}>
+                                      <div className="flex items-center gap-2">
+                                        <Bike className="h-4 w-4" />
+                                        <span>{asset.brand} {asset.model}</span>
+                                        <span className="text-muted-foreground text-xs">
+                                          {asset.registration_number || asset.chassis_number}
+                                        </span>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                            {assigningAsset === sale.id && (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            )}
+                            {assets.length === 0 && (
+                              <Badge variant="outline" className="text-warning border-warning">
+                                No assets available
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={client.is_active ? "default" : "secondary"}>
-                          {client.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(client)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredClients.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No clients found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
