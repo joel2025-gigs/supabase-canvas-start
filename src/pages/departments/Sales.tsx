@@ -5,6 +5,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -12,8 +13,9 @@ import {
   Users, 
   Target, 
   Hash,
-  UserPlus,
-  ShoppingCart
+  ShoppingCart,
+  Banknote,
+  CreditCard
 } from "lucide-react";
 import { DepartmentStatsCard } from "@/components/departments/DepartmentStatsCard";
 import { OfficerManagement } from "@/components/departments/OfficerManagement";
@@ -36,6 +38,8 @@ interface DepartmentTarget {
   per_officer_target: number;
 }
 
+type FilterTab = "all" | "cash" | "loan";
+
 const Sales = () => {
   const { user, loading: authLoading, isStaff, hasAnyRole, roles } = useAuth();
   const navigate = useNavigate();
@@ -46,6 +50,7 @@ const Sales = () => {
   const [editingInquiry, setEditingInquiry] = useState<InquiryWithDetails | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPerformanceDialogOpen, setIsPerformanceDialogOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
   const [stats, setStats] = useState({
     totalSales: 0,
     cashSales: 0,
@@ -353,25 +358,59 @@ const Sales = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {inquiries.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No leads yet. They'll appear here when visitors submit the Get Started form.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {inquiries.slice(0, 10).map((inquiry) => (
-                  <InquiryCard
-                    key={inquiry.id}
-                    inquiry={inquiry}
-                    onEdit={canManage ? handleEditInquiry : undefined}
-                    onUpdateStatus={canManage ? handleUpdateStatus : undefined}
-                    onSendToOperations={canManage ? handleSendToOperations : undefined}
-                    onSendToCredit={canManage ? handleSendToCredit : undefined}
-                  />
-                ))}
-              </div>
-            )}
+            <Tabs value={activeFilter} onValueChange={(v) => setActiveFilter(v as FilterTab)} className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="all" className="gap-2">
+                  <Users className="h-4 w-4" />
+                  All ({inquiries.length})
+                </TabsTrigger>
+                <TabsTrigger value="cash" className="gap-2">
+                  <Banknote className="h-4 w-4" />
+                  Cash ({inquiries.filter(i => i.sale_type === 'cash').length})
+                </TabsTrigger>
+                <TabsTrigger value="loan" className="gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Loan ({inquiries.filter(i => i.sale_type === 'loan' || !i.sale_type).length})
+                </TabsTrigger>
+              </TabsList>
+
+              {(() => {
+                const filteredInquiries = inquiries.filter(inquiry => {
+                  if (activeFilter === "all") return true;
+                  if (activeFilter === "cash") return inquiry.sale_type === "cash";
+                  if (activeFilter === "loan") return inquiry.sale_type === "loan" || !inquiry.sale_type;
+                  return true;
+                });
+
+                if (filteredInquiries.length === 0) {
+                  return (
+                    <div className="text-center py-12">
+                      <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        {activeFilter === "all" 
+                          ? "No leads yet. They'll appear here when visitors submit the Get Started form."
+                          : `No ${activeFilter} leads found.`}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {filteredInquiries.slice(0, 10).map((inquiry) => (
+                      <InquiryCard
+                        key={inquiry.id}
+                        inquiry={inquiry}
+                        onEdit={canManage ? handleEditInquiry : undefined}
+                        onUpdateStatus={canManage ? handleUpdateStatus : undefined}
+                        onSendToOperations={canManage ? handleSendToOperations : undefined}
+                        onSendToCredit={canManage ? handleSendToCredit : undefined}
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
+            </Tabs>
           </CardContent>
         </Card>
 
