@@ -30,6 +30,7 @@ import NotFound from "./pages/NotFound";
 import Sales from "./pages/departments/Sales";
 import CreditCollection from "./pages/departments/CreditCollection";
 import Recovery from "./pages/departments/Recovery";
+import Operations from "./pages/departments/Operations";
 
 
 const queryClient = new QueryClient();
@@ -67,10 +68,11 @@ const App = () => (
           <Route path="/settings" element={<Settings />} />
           <Route path="/product-management" element={<ProductManagement />} />
           <Route path="/jobs" element={<Jobs />} />
-          {/* Department routes */}
+{/* Department routes */}
           <Route path="/departments/sales" element={<Sales />} />
           <Route path="/departments/credit-collection" element={<CreditCollection />} />
           <Route path="/departments/recovery" element={<Recovery />} />
+          <Route path="/departments/operations" element={<Operations />} />
           
           {/* Catch-all */}
           <Route path="*" element={<NotFound />} />
